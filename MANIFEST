@@ -10,3 +10,5 @@ linghelper/syntactic_predictability.py
 linghelper/media/SemPred.pl
 linghelper/media/__init__.py
 linghelper/media/constants.py
+linghelper/media/idf_scores.py
+linghelper/media/stoplist.py

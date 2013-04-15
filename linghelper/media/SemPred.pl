@@ -9,25 +9,21 @@ $leskObj = new WordNet::Similarity::lesk($wn);
 $one = $ARGV[0];
 @twos = split(/,/,$ARGV[1]);
 
+my @values = ();
+
 #print '@twos';
-$spsum = 0.0;
 
 foreach my $item (@twos) {
 	$value = process($one, $item);
 	#print "$value\n";
 	if ($value != -1){
-	$spsum += $value;
+	push(@values,$value);
 	}
 }
 
-$length = @twos;
-if($spsum != 0.0){
-$spavg = $spsum / $length;
-}
-else{
-$spavg = $spsum;
-}
-print STDOUT "$spavg";
+$spstring = join(',',@values);
+
+print STDOUT "$spstring";
 
 #Begin slightly modified Similarity code
 sub process

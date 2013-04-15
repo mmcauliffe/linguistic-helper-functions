@@ -1,3 +1,3 @@
-from .dtw import *
-from .semantic_predictability import getSemanticRelatedness
+from .dtw import DTW
+from .semantic_predictability import SemanticPredictabilityAnalyzer
 #from .syntactic_predictability import getSynProbList
