@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='linguistic-helper-functions',
-    version='0.1.22',
+    version='0.1.23',
     author='Michael McAuliffe',
     author_email='michael.e.mcauliffe@gmail.com',
     packages=['linghelper','linghelper.media'],
