@@ -42,7 +42,7 @@ def smooth(track, s):
                 newtrack[sortedtrack[t]][f] = smoothedF / (2*s + 1)
     return newtrack
 
-def DCT(time_series_data):
+def DCT(time_series_data,num_coeff=None):
     """
     Calculate coefficients of a DCT-II analysis of time-normalized data.
     """
@@ -57,6 +57,8 @@ def DCT(time_series_data):
         else:
             k = 1
         coefficients[m] = coefficients[m]* (2*k)/N
+    if num_coeff is not None:
+        return coefficients[:num_coeff]
     return coefficients
 
 def UnDCT(coefficients,N):

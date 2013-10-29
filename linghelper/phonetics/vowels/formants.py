@@ -11,6 +11,13 @@ A2P = {'AA':'5', 'AE':'3', 'AH':'6', 'AO':'53', 'AW':'42', 'AY':'41', 'EH':'2', 
 A2P_FINAL = {'IY':'12', 'EY':'22', 'OW':'63'}
 A2P_R = {'EH':'2', 'AE':'3', 'IH':'14', 'IY':'14', 'EY':'24', 'AA':'44', 'AO':'64', 'OW':'64', 'UH':'74', 'UW':'74', 'AH':'6', 'AW':'42', 'AY':'41', 'OY':'61'}
 
+class FormantTrack(object):
+    def __init__(self,filename,means=None,covs=None,max_formant='5500',point='third'):
+        pass
+
+    def get_track(self,track_name):
+        return tracks[track_name]
+
 def formant_tracks(filename, n, max_formant, praat = None):
     if not praat:
         praat = PraatLoader()
@@ -61,21 +68,46 @@ def get_formant_tracks(filename, means = None, cov = None, max_formant = 5000, p
     point_measure = get_measurement_at_point(best[1], point)
     return best[1],point_measure
 
+def get_relevant_features(foll_seg, prec_seg):
+    if prec_seg in set(['T','D','DX','EN','EL','N','L','R','S','Z']):
+        prec_seg = 'alveolar'
+    else:
+        prec_seg = ''
+    if foll_seg in set(['R','AXR']):
+        foll_seg = 'rhotic'
+    elif foll_seg != '':
+        foll_seg = 'other'
+    return foll_seg, prec_seg
+
 def get_vowel_code(vowel,foll_seg,prec_seg):
+    point = 'third'
+    foll_seg,prec_seg = get_relevant_features(foll_seg, prec_seg)
     if vowel == 'UW' and prec_seg == 'alveolar':
         pc = '73'
     elif foll_seg == 'rhotic' and vowel != 'ER':
         pc = A2P_R[vowel]
-    elif vowel in ['IY','EY','OW'] and foll_seg:
+    elif vowel in ['IY','EY','OW'] and foll_seg == '':
         pc = A2P_FINAL[vowel]
     else:
         pc = A2P[vowel]
-    return pc
+    return pc,point
 
 
 def get_speaker_means(measurements):
+    """
+    measurements should be a dict of keys which are tuples of (vowel, foll_seg, prec_seg)
+    and items which are lists of dictionarys with 'F1','F2','B1','B2', and 'Dur' as keys
+    """
+    means = {}
+    covs = {}
     for key, value in measurements.items():
-        vowel_code = get_vowel_code(*key)
+        vowel_code, point = get_vowel_code(*key)
+        mat = [value[y][x] for x in ['F1','F2','B1','B2','Dur'] for y in value]
+        cov = scipy.cov(mat)
+        ms = [np.mean(x) for x in mat]
+        means[vowel_code] = ms
+        cov[vowel_code] = cov
+    return means, covs
 
 
 def analyze_vowel(filename, vowel=None, foll_seg=None, prec_seg=None,
