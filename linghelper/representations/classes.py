@@ -157,17 +157,5 @@ def syllabify(inputword):
         syllables[-1].coda = cons
     return syllables
 
-if __name__ == '__main__':
-    tests = [['','B.AE.D'],
-                ['','B.AE.S.D.IY'],
-                ['','AH.B.AE.S.T.IY'],
-                ['','AH0.B.AE0.D.IY1']]
-    for t in tests:
-        w = Word(*t)
-        print map(str,w.syllables)
-        print w.in_position('T','onset','final')
-        print w.neighbour_transcription('D','onset','final')
-        print w.in_position('D','onset','final')
-        print w.segment_count('D')
 
 

@@ -3,17 +3,9 @@ import os
 import sys
 from scipy.spatial.distance import mahalanobis
 
-try:
-    from praatinterface import PraatLoader
-except ImportError:
-    sys.path.append('/home/michael/dev/Linguistics/python-praat-scripts')
-    from praatinterface import PraatLoader
+from praatinterface import PraatLoader
 
-try:
-    from linghelper.phonetics.vowels.mahalanobis import MEANS,COVS
-except ImportError:
-    sys.path.append('/home/michael/dev/Linguistics/linguistic-helper-functions')
-    from linghelper.phonetics.vowels.mahalanobis import MEANS,COVS
+from .mahalanobis import MEANS,COVS
 
 from linghelper.phonetics.helper import smooth, DCT
 
@@ -148,11 +140,3 @@ def analyze_vowel(filename, vowel=None, foll_seg=None, prec_seg=None,
     else:
         tracks = get_formant_tracks(filename,max_formant=max_formant,point=point)
     return tracks
-
-if __name__ == '__main__':
-    test_path = '/home/michael/dev/Tools/Buckeye-12605.wav'
-    t = analyze_vowel(os.path.normpath(test_path),vowel='AE',foll_seg='D',prec_seg='B',speaker_gender='F')
-    print t.get_track('F1')
-    print t.get_track('F3')
-    print t.get_track('F5')
-    print t.get_DCT('F1')

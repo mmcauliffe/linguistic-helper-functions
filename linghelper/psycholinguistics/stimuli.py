@@ -135,15 +135,15 @@ def get_target_words(iphod,sound,sylpos,wordpos):
             #targets.append(i)
     #return targets
 
-if __name__ == '__main__':
-    iphod = read_iphod()
-    filler_list = get_filler_words(iphod)
-    random.shuffle(filler_list)
-    output_list(filler_list,'/home/michael/Documents/Linguistics/Projects/Perceptual Learning/Pilot/Lists/fillers.txt')
-    for sound in SETTINGS['Critical segments']:
-        for sylpos in SETTINGS['Critical position in syllable']:
-            for wordpos in SETTINGS['Critical syllable position in word']:
-                target_list = get_target_words(iphod,sound,sylpos,wordpos)
-                random.shuffle(target_list)
-                print ', '.join([x['Word'] for x in target_list][:10])
-                output_list(target_list,'/home/michael/Documents/Linguistics/Projects/Perceptual Learning/Pilot/Lists/%s_%s_%s.txt'%(sound,sylpos,wordpos))
+#if __name__ == '__main__':
+#    iphod = read_iphod()
+#    filler_list = get_filler_words(iphod)
+#    random.shuffle(filler_list)
+#    output_list(filler_list,'/home/michael/Documents/Linguistics/Projects/Perceptual Learning/Pilot/Lists/fillers.txt')
+#    for sound in SETTINGS['Critical segments']:
+#        for sylpos in SETTINGS['Critical position in syllable']:
+#            for wordpos in SETTINGS['Critical syllable position in word']:
+#                target_list = get_target_words(iphod,sound,sylpos,wordpos)
+#                random.shuffle(target_list)
+#                print ', '.join([x['Word'] for x in target_list][:10])
+#                output_list(target_list,'/home/michael/Documents/Linguistics/Projects/Perceptual Learning/Pilot/Lists/%s_%s_%s.txt'%(sound,sylpos,wordpos))
