@@ -115,13 +115,13 @@ def get_vowel_code(vowel,foll_seg,prec_seg):
 def get_speaker_means(measurements):
     """
     measurements should be a dict of keys which are tuples of (vowel, foll_seg, prec_seg)
-    and items which are lists of dictionarys with 'F1','F2','B1','B2', and 'Dur' as keys
+    and items which are lists of dictionarys with 'F1','F2','B1','B2', and 'VDur' as keys
     """
     means = {}
     covs = {}
     for key, value in measurements.items():
         vowel_code, point = get_vowel_code(*key)
-        mat = [value[y][x] for x in ['F1','F2','B1','B2','Dur'] for y in value]
+        mat = [value[y][x] for x in ['F1','F2','B1','B2','VDur'] for y in value]
         cov = scipy.cov(mat)
         ms = [np.mean(x) for x in mat]
         means[vowel_code] = ms

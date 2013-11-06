@@ -1,3 +1,3 @@
-#from .dtw import DTW
+from .dtw import minEditDist
 #from .semantic_predictability import SemanticPredictabilityAnalyzer,perl_get_semantic_predictability
 #from .syntactic_predictability import getSynProbList
