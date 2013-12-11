@@ -3,7 +3,7 @@ import os
 import sys
 from scipy.spatial.distance import mahalanobis
 
-from praatinterface import PraatLoader
+from linghelper.phonetics.praat import PraatLoader
 
 from .mahalanobis import MEANS,COVS
 
@@ -36,10 +36,13 @@ class FormantTrack(object):
         elif point == 'beginning':
             measurement_point = beg
         else:
-            measurement_point = min(tracks.keys(),key=lambda x: abs(x-third))
+            t = filter(lambda x: all(k in tracks[x] for k in ['F1','F2']),tracks.keys())
+            measurement_point = min(t,key=lambda x: abs(x-third))
         self.point = measurement_point
 
-    def get_point_measurement(self,keys = ['F1','F2','B1','B2']):
+    def get_point_measurement(self,keys = ['F1','F2','B1','B2'],return_dict = False):
+        if return_dict:
+            return {k: self.tracks[self.point][k] for k in keys if k in self.tracks[self.point]}
         return [self.tracks[self.point][x] for x in keys]
 
     def get_track(self,track_name):
@@ -47,8 +50,11 @@ class FormantTrack(object):
                             for x in sorted(self.tracks.keys())
                                 if track_name in self.tracks[x]]
 
-    def get_DCT(self,track_name,num_coeff=3):
-        return DCT(self.get_track(track_name),num_coeff)
+    def get_DCT(self,track_name,num_coeff=3,return_dict = False):
+        dct = DCT(self.get_track(track_name),num_coeff)
+        if return_dict:
+            return {'%sC%d' % (track_name,c+1): dct[c] for c in range(num_coeff)}
+        return dct
 
 def formant_tracks(filename, n, max_formant, praat = None):
     if not praat:
@@ -66,7 +72,8 @@ def get_formant_tracks(filename, means = None, covs = None, max_formant = 5000, 
     best = (None,None)
     n_current = 0
     for n in range(3,7):
-        tracks = FormantTrack(formant_tracks(filename, n, max_formant),point)
+        t = formant_tracks(filename, n, max_formant)
+        tracks = FormantTrack(t,point)
         #tracks = smooth(tracks, 12)
         if means:
             distance = calc_distance(tracks,means,covs)
@@ -89,9 +96,13 @@ def get_relevant_features(foll_seg, prec_seg):
     return foll_seg, prec_seg
 
 def get_vowel_code(vowel,foll_seg,prec_seg):
+    vowel = vowel.upper()
     point = 'third'
     if vowel is None:
         return '', point
+    if vowel.endswith('N'):
+        foll_seg = 'N'
+        vowel = vowel[:-1]
     foll_seg,prec_seg = get_relevant_features(foll_seg, prec_seg)
     if vowel == 'UW' and prec_seg == 'alveolar':
         pc = '73'
