@@ -1,5 +1,6 @@
 import sys
 sys.path.append('/home/michael/dev/Linguistics/linguistic-helper-functions')
+sys.path.append('/home/michael/dev/Linguistics/python-praat-scripts')
 
 from scipy.spatial.distance import euclidean
 
@@ -23,20 +24,13 @@ def mfcc_distance(filename_one, filename_two):
                                         second = selected()
 
                                         select first
-                                        To Spectrogram... 0.005 5000 0.002 20 Gaussian
-                                        first_spec = selected()
-
-                                        select second
-                                        To Spectrogram... 0.005 5000 0.002 20 Gaussian
-                                        second_spec = selected()
-
-                                        select first
                                         To MFCC... 20 0.015 0.005 100.0 100.0 0.0
                                         first_mfcc = selected()
 
                                         select second
                                         To MFCC... 20 0.015 0.005 100.0 100.0 0.0
                                         second_mfcc = selected()
+
 
                                         select first_mfcc
                                         plus second_mfcc
@@ -49,31 +43,32 @@ def mfcc_distance(filename_one, filename_two):
     return distance
 
 def spectral_distance(filename_one, filename_two):
-    scripts = {'spec_distance.praat':"""form Variables
-                                            sentence firstfile
-                                            sentence secondfile
-                                        endform
+    scripts = {'spec_distance.praat':"""
+form Variables
+    sentence firstfile
+    sentence secondfile
+endform
 
-                                        Read from file... 'firstfile$'
-                                        first = selected()
+Read from file... 'firstfile$'
+first = selected()
 
-                                        Read from file... 'secondfile$'
-                                        second = selected()
+Read from file... 'secondfile$'
+second = selected()
 
-                                        select first
-                                        To Spectrogram... 0.005 5000 0.002 20 Gaussian
-                                        first_spec = selected()
+select first
+To Spectrogram... 0.005 8000 0.002 20 Gaussian
+first_spec = selected()
 
-                                        select second
-                                        To Spectrogram... 0.005 5000 0.002 20 Gaussian
-                                        second_spec = selected()
+select second
+To Spectrogram... 0.005 8000 0.002 20 Gaussian
+second_spec = selected()
 
-                                        select first_spec
-                                        plus second_spec
-                                        To DTW... 1 1 no restriction
-                                        spec_dist = Get distance (weighted)
+select first_spec
+plus second_spec
+To DTW... 1 1 no restriction
+spec_dist = Get distance (weighted)
 
-                                        echo 'spec_dist'"""}
+echo 'spec_dist'"""}
     p = PraatLoader(additional_scripts=scripts)
     distance = p.run_script('spec_distance.praat',filename_one, filename_two)
     return distance
@@ -114,4 +109,5 @@ if __name__ == '__main__':
                 }
     print(intensity_distance(file_one['filename'],file_two['filename']))
     print(spectral_distance(file_one['filename'],file_two['filename']))
+    print(mfcc_distance(file_one['filename'],file_two['filename']))
 
