@@ -2,8 +2,10 @@
 import math
 
 from scipy.io import wavfile
-from scipy.signal import filtfilt,butter,hilbert,correlate,correlate2d
+from scipy.signal import filtfilt,butter,hilbert,correlate,correlate2d,lfilter
 import matplotlib.pyplot as plt
+
+import numpy as np
 
 def snd2env(s, iFsOrig, fTotFreqRange, iNumBands, fEnvCutOff):
     bandLo = [ fTotFreqRange[0]*math.pow(math.exp(math.log(fTotFreqRange[1]/fTotFreqRange[0])/iNumBands),x) for x in range(iNumBands)]
@@ -33,24 +35,37 @@ def envelope_match(e1,e2):
     else:
         longerEnv = e2
         shorterEnv = e1
-    matchSum = correlate(longerEnv[0],shorterEnv[0],mode='valid')
+    matchSum = np.correlate(longerEnv[0],shorterEnv[0],mode='valid')
     for i in range(1,len(longerEnv)):
-        temp = correlate(longerEnv[i],shorterEnv[i],mode='valid')
+        temp = np.correlate(longerEnv[i],shorterEnv[i],mode='valid')
         matchSum = [matchSum[j] + temp[j] for j in range(len(matchSum))]
     matchVal = max(matchSum)/len(longerEnv)
 
     return matchVal
 
+def preproc(sig):
+    proc = sig
+    #proc = lfilter(1, [1, -0.95],sig)
+    denom = math.sqrt(np.mean([math.pow(x,2) for x in proc]))
+    proc = [ x/denom *0.03 for x in proc]
+    return proc
+
+def calc_envelope(path,num_bands=4):
+    sr,sig = wavfile.read(path)
+    proc = preproc(sig)
+    env = snd2env(proc,sr,(80,7800),num_bands,60)
+    return env
+
 def envelope_similarity(path_one,path_two,num_bands=4):
-    sr,sigone = wavfile.read(path_one)
-    sr,sigtwo = wavfile.read(path_two)
-    env_one = snd2env(sigone,sr,(80,7800),num_bands,60)
-    env_two = snd2env(sigtwo,sr,(80,7800),num_bands,60)
+    env_one = calc_envelope(path_one,num_bands = num_bands)
+    env_two = calc_envelope(path_two,num_bands = num_bands)
     matchVal = envelope_match(env_one, env_two)
     return matchVal
 
 
 if __name__ == '__main__':
+    import time
+    start_time = time.time()
     path_one = '/home/michael/Documents/Grad/PhD/MollyLab/NZDiph/Scripting/AUModelTokens/spare.wav'
     path_two = '/home/michael/Documents/Grad/PhD/MollyLab/NZDiph/Scripting/AUModelTokens/fare.wav'
     sr,sigone = wavfile.read(path_one)
@@ -60,4 +75,7 @@ if __name__ == '__main__':
     plt.show()
     sr,sigtwo = wavfile.read(path_two)
     env_two = snd2env(sigtwo,sr,(80,7800),8,60)
-    envelope_match(env_one,env_two)
+    print('envelopes generated')
+    match_time = time.time()
+    print(envelope_match(env_one,env_two))
+    print(time.time() - match_time)

@@ -19,6 +19,7 @@ class FormantTrack(object):
         beg = min(tracks.keys())
         end = max(tracks.keys())
         duration = end - beg
+        self.vdur = duration
         third = (duration/3.0)+beg
         halfway = duration / 2.0
         if point == 'maxF1':
@@ -50,10 +51,17 @@ class FormantTrack(object):
                             for x in sorted(self.tracks.keys())
                                 if track_name in self.tracks[x]]
 
+    def get_vdur(self):
+        return self.vdur
+
     def get_DCT(self,track_name,num_coeff=3,return_dict = False):
         dct = DCT(self.get_track(track_name),num_coeff)
         if return_dict:
-            return {'%sC%d' % (track_name,c+1): dct[c] for c in range(num_coeff)}
+            try:
+                output = {'%sC%d' % (track_name,c+1): dct[c] for c in range(num_coeff)}
+            except IndexError:
+                output = {'%sC%d' % (track_name,c+1): None for c in range(num_coeff)}
+            return output
         return dct
 
 def formant_tracks(filename, n, max_formant, praat = None):
@@ -63,12 +71,17 @@ def formant_tracks(filename, n, max_formant, praat = None):
     return praat.read_praat_out(text)
 
 
-def calc_distance(tracks, means, covs):
+def calc_distance(tracks, means, covs,remeasure):
     f_point = tracks.get_point_measurement()
-    dist = mahalanobis(f_point,means, covs.getI())
+    if remeasure:
+        f_point.append(tracks.get_vdur())
+    c = np.matrix(covs).I
+    dist = mahalanobis(f_point,means, c)
     return dist
 
-def get_formant_tracks(filename, means = None, covs = None, max_formant = 5000, point = 'third'):
+def get_formant_tracks(filename, means = None, covs = None,
+                        max_formant = 5000, point = 'third',
+                        remeasure = False):
     best = (None,None)
     n_current = 0
     for n in range(3,7):
@@ -76,7 +89,7 @@ def get_formant_tracks(filename, means = None, covs = None, max_formant = 5000, 
         tracks = FormantTrack(t,point)
         #tracks = smooth(tracks, 12)
         if means:
-            distance = calc_distance(tracks,means,covs)
+            distance = calc_distance(tracks,means,covs,remeasure)
             if not best[0] or best[0] > distance:
                 best = (distance,tracks)
                 n_current = n
@@ -122,13 +135,21 @@ def get_speaker_means(measurements):
     """
     means = {}
     covs = {}
+    by_vowel_code = {}
     for key, value in measurements.items():
         vowel_code, point = get_vowel_code(*key)
-        mat = [value[y][x] for x in ['F1','F2','B1','B2','VDur'] for y in value]
-        cov = scipy.cov(mat)
-        ms = [np.mean(x) for x in mat]
-        means[vowel_code] = ms
-        cov[vowel_code] = cov
+        if vowel_code not in by_vowel_code:
+            by_vowel_code[vowel_code] = []
+        for y in value:
+            by_vowel_code[vowel_code].append([ y[x] for x in ['F1','F2','B1','B2','VDur']])
+    for key,value in by_vowel_code.items():
+        #mat = [value[x] for x in ['F1','F2','B1','B2','VDur'] for y in value]
+        value = np.array(value)
+        cov = np.cov(value,rowvar=0)
+
+        ms = [np.mean(value[:,x]) for x in range(value.shape[1])]
+        means[key] = ms
+        covs[key] = cov
     return means, covs
 
 
@@ -144,10 +165,12 @@ def analyze_vowel(filename, vowel=None, foll_seg=None, prec_seg=None,
         if not means and not covs:
             m = MEANS[vowel_code]
             c = COVS[vowel_code]
+            remeasure = False
         else:
-            m = means
-            c = covs
-        tracks = get_formant_tracks(filename,means=m,covs=c,max_formant=max_formant,point=point)
+            m = means[vowel_code]
+            c = covs[vowel_code]
+            remeasure = True
+        tracks = get_formant_tracks(filename,means=m,covs=c,max_formant=max_formant,point=point,remeasure=remeasure)
     else:
         tracks = get_formant_tracks(filename,max_formant=max_formant,point=point)
     return tracks

@@ -84,6 +84,9 @@ class Syllable(object):
         self.coda = coda
         self.sep = sep
 
+    def num_segments(self):
+        return len(self.onset+[self.nucleus]+self.coda)
+
     def in_onset(self,sound):
         if sound in self.onset:
             return True

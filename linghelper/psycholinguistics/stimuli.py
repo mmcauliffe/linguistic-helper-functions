@@ -1,7 +1,8 @@
-import os
+import os,sys
 import re
 import random
 from csv import DictReader,DictWriter
+sys.path.append('/home/michael/dev/Linguistics/linguistic-helper-functions')
 
 from linghelper.representations import Word
 
@@ -10,7 +11,7 @@ IPHOD_PATH = '/home/michael/dev/Corpora/IPHOD/IPhOD2_Words.txt'
 DIALECT_MERGER = [('AA','AO')]
 
 SETTINGS = {
-            'NSylls':[2,3,4,5],
+            'NSylls':[3,4,5],
             'CVSkel': [''],
             'Critical segments': ['S','SH'],
             'Avoided segments': ['Z','ZH','CH','JH'],
@@ -23,11 +24,30 @@ SETTINGS = {
             'No plurals': True,
             'No gerunds': True,
             'No past tense': True,
+            'Home dir': '/home/michael/Documents/Linguistics/Projects/Perceptual Learning/Pilot/Lists',
             }
 
 TRANS = set([])
 
+CONS = set([])
+
 VOWELS = set(['EY','IY','IH','AH','ER','AW','AY','OY','AA','AO','EH','UH','UW','OW','AE'])
+
+def generate_nonword_candidate(word):
+    for s in word.syllables:
+        segs = s.num_segments()
+
+
+def nonwords_from_words():
+    files = os.listdir(SETTINGS['Home dir'])
+    for f in files:
+        with(open(os.path.join(SETTINGS['Home dir'],f) as inf:
+            reader = DictRead(inf,delimiter='\t')
+            for l in reader:
+                candidates = []
+                w = Word(l['Word'],l['Transcription'])
+                while len(candidates) < 5:
+                    cand = generate_nonword_candidate(w)
 
 def read_iphod():
     outlist = []
@@ -99,51 +119,15 @@ def get_target_words(iphod,sound,sylpos,wordpos):
         targets.append({'Word':w.orthography,'Transcription':w.render_transcription()})
     return targets
 
-#def get_target_words(iphod, sound, position):
-    ##relevant_neighbours = filter(lambda x: x != sound, ['S','SH','Z','ZH','F','V','TH','DH'])
-    #all_sounds = ['S','SH','Z','ZH']
-    #relevant_neighbours = filter(lambda x: x != sound, all_sounds)
-    #targets = []
-    #for i in iphod:
-        #trans = i['UnTrn'].split('.')
-        #if trans[position] != sound:
-            #continue
-        #if i['Word'].istitle():
-            #continue
-        #if trans[-1] in ['S','Z']:
-            #if '.'.join(trans[:-1]) in TRANS:
-                #continue
-        #good = False
-        #if position < 0:
-            #temp_pos = len(trans) + position
-        #else:
-            #temp_pos = position
-        #for t in range(len(trans)):
-            #if t == temp_pos:
-                #for s in relevant_neighbours:
-                    #trans[t] = s
-                    #if '.'.join(trans) in TRANS:
-                        #break
-                #else:
-                    #good = True
-                #trans[t] = sound
-                #if not good:
-                    #break
-            #elif trans[t] in all_sounds:
-                #break
-        #else:
-            #targets.append(i)
-    #return targets
-
-#if __name__ == '__main__':
-#    iphod = read_iphod()
-#    filler_list = get_filler_words(iphod)
-#    random.shuffle(filler_list)
-#    output_list(filler_list,'/home/michael/Documents/Linguistics/Projects/Perceptual Learning/Pilot/Lists/fillers.txt')
-#    for sound in SETTINGS['Critical segments']:
-#        for sylpos in SETTINGS['Critical position in syllable']:
-#            for wordpos in SETTINGS['Critical syllable position in word']:
-#                target_list = get_target_words(iphod,sound,sylpos,wordpos)
-#                random.shuffle(target_list)
-#                print ', '.join([x['Word'] for x in target_list][:10])
-#                output_list(target_list,'/home/michael/Documents/Linguistics/Projects/Perceptual Learning/Pilot/Lists/%s_%s_%s.txt'%(sound,sylpos,wordpos))
+if __name__ == '__main__':
+    iphod = read_iphod()
+    filler_list = get_filler_words(iphod)
+    random.shuffle(filler_list)
+    output_list(filler_list,'/home/michael/Documents/Linguistics/Projects/Perceptual Learning/Pilot/Lists/fillers.txt')
+    for sound in SETTINGS['Critical segments']:
+        for sylpos in SETTINGS['Critical position in syllable']:
+            for wordpos in SETTINGS['Critical syllable position in word']:
+                target_list = get_target_words(iphod,sound,sylpos,wordpos)
+                random.shuffle(target_list)
+                print(', '.join([x['Word'] for x in target_list][:10]))
+                output_list(target_list,'/home/michael/Documents/Linguistics/Projects/Perceptual Learning/Pilot/Lists/%s_%s_%s.txt'%(sound,sylpos,wordpos))
