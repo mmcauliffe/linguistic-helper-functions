@@ -5,7 +5,7 @@ import csv
 
 sys.path.append('/home/michael/dev/Linguistics/linguistic-helper-functions')
 sys.path.append('/home/michael/dev/Linguistics/python-praat-scripts')
-from linghelper.phonetics.similarity.envelope import envelope_similarity
+from linghelper.phonetics.similarity.envelope import envelope_similarity,calc_envelope,envelope_match
 from linghelper.phonetics.similarity.spectral import mfcc_distance,spectral_distance
 
 
@@ -48,15 +48,20 @@ def get_model_path(word):
     return os.path.join(MODEL_DIR,'%s.wav' % word)
 
 if __name__ == '__main__':
-    with open(os.path.join(BASE_DIR,'output.txt'),'w') as f:
+    numBands = 8
+    with open(os.path.join(BASE_DIR,'nz_output8BandInfo.txt'),'w') as f:
         csvw = csv.writer(f,delimiter='\t')
-        csvw.writerow(['Shadower_number','Block'
-                        'Word','shad_to_mod_env_sim','base_to_mod_env_sim',
-                        #'mfcc_shad_to_mod','mfcc_mod_to_shad',
-                        #'spec_shad_to_mod','spec_mod_to_shad',
-                        #'mfcc_base_to_mod','mfcc_mod_to_base',
-                        #'spec_base_to_mod','spec_mod_to_base'
-                        ])
+        #csvw.writerow(['Shadower_number','Block'
+                        #'Word','shad_to_mod_env_sim','base_to_mod_env_sim',
+                        ##'mfcc_shad_to_mod','mfcc_mod_to_shad',
+                        ##'spec_shad_to_mod','spec_mod_to_shad',
+                        ##'mfcc_base_to_mod','mfcc_mod_to_base',
+                        ##'spec_base_to_mod','spec_mod_to_base'
+                        #])
+        csvw.writerow(['Baseline_filename','Shadowed_filename','Model_filename',
+                        'Base_to_Model_env_sim',
+                        'Shad_to_Model_env_sim']+ ['B%d_difference' % x for x in range(1,numBands+1)])
+
         for s in Shadowers:
             print(s)
             for w in Words:
@@ -65,37 +70,23 @@ if __name__ == '__main__':
                     if b == 'Baseline':
                         continue
                     print(b)
-                    shad_path = get_shadower_path(w,s,b)
+                    shadowed_path = get_shadower_path(w,s,b)
                     model_path = get_model_path(w)
-                    base_path = get_shadower_path(w,s,'Baseline')
+                    baseline_path = get_shadower_path(w,s,'Baseline')
 
-                    if os.path.isfile(shad_path) and os.path.isfile(model_path) and os.path.isfile(base_path):
-                        shad_to_mod_env_sim = envelope_similarity(shad_path,model_path,num_bands=16)
-                        base_to_mod_env_sim = envelope_similarity(base_path,model_path,num_bands=16)
-                        #mfcc_shad_to_mod = mfcc_distance(shad_path,model_path)
-                        #mfcc_mod_to_shad = mfcc_distance(model_path,shad_path)
-                        #spec_shad_to_mod = spectral_distance(shad_path,model_path)
-                        #spec_mod_to_shad = spectral_distance(model_path,shad_path)
+                    if not os.path.isfile(shadowed_path):
+                        continue
 
-                        #mfcc_base_to_mod = mfcc_distance(base_path,model_path)
-                        #mfcc_mod_to_base = mfcc_distance(model_path,base_path)
-                        #spec_base_to_mod = spectral_distance(base_path,model_path)
-                        #spec_mod_to_base = spectral_distance(model_path,base_path)
-                    else:
-                        shad_to_env_sim = 'NA'
-                        base_to_env_sim = 'NA'
-                        #mfcc_shad_to_mod = 'NA'
-                        #mfcc_mod_to_shad ='NA'
-                        #spec_shad_to_mod = 'NA'
-                        #spec_mod_to_shad = 'NA'
+                    if not os.path.isfile(model_path):
+                        continue
 
-                        #mfcc_base_to_mod = 'NA'
-                        #mfcc_mod_to_base ='NA'
-                        #spec_base_to_mod = 'NA'
-                        #spec_mod_to_base = 'NA'
-                    csvw.writerow([s,b,w,shad_to_mod_env_sim,base_to_mod_env_sim,
-                            #mfcc_shad_to_mod,mfcc_mod_to_shad,
-                            #spec_shad_to_mod,spec_mod_to_shad,
-                            #mfcc_base_to_mod,mfcc_mod_to_base,
-                            #spec_base_to_mod,spec_mod_to_base
-                            ])
+                    if not os.path.isfile(baseline_path):
+                        continue
+                    mod_env = calc_envelope(model_path,num_bands=numBands,erb=False)
+                    base_env = calc_envelope(baseline_path,num_bands=numBands,erb=False)
+                    shad_env = calc_envelope(shadowed_path,num_bands=numBands,erb=False)
+                    b_to_m_sim,b_to_m_bandScores = envelope_match(mod_env,base_env,returnBandScores =True)
+                    s_to_m_sim,s_to_m_bandScores = envelope_match(mod_env,shad_env,returnBandScores =True)
+                    bands = [ s_to_m_bandScores[x] - b_to_m_bandScores[x] for x in range(numBands)]
+                    csvw.writerow([os.path.split(baseline_path)[1], os.path.split(shadowed_path)[1], os.path.split(model_path)[1],
+                                    b_to_m_sim,s_to_m_sim] + bands)

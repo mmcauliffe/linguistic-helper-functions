@@ -4,8 +4,9 @@ import sys
 import csv
 
 sys.path.append('/home/michael/dev/Linguistics/linguistic-helper-functions')
-sys.path.append('/home/michael/dev/Linguistics/python-praat-scripts')
-from linghelper.phonetics.similarity.envelope import envelope_similarity
+#from linghelper.phonetics.similarity.envelope import envelope_similarity,calc_envelope,envelope_match
+
+from calculate_similarity import phonetic_similarity
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -21,6 +22,34 @@ VOICETYPE = {'225': 'mostattractive_CAL',
                 '304':'leastattractive_CAL',
                 '316':'leasttypical_CAL',
                 '321':'mostattractive_CAL'}
+
+ati_dir = '/home/michael/dev/Data/ATI'
+model_dir = os.path.join(ati_dir,'Model')
+shadower_dir = os.path.join(ati_dir,'Shadowers')
+male_models = os.listdir(os.path.join(model_dir,'Male'))
+female_models = os.listdir(os.path.join(model_dir,'Female'))
+models = list(map(lambda x: (x,'Male'),male_models))
+models += list(map(lambda x: (x,'Female'),female_models))
+male_shadowers = os.listdir(os.path.join(shadower_dir,'Male'))
+female_shadowers = os.listdir(os.path.join(shadower_dir,'Female'))
+shadowers = list(map(lambda x: (x,'Male'),male_shadowers))
+shadowers += list(map(lambda x: (x,'Female'),female_shadowers))
+numBands = 8
+words = [('a','cot'),
+            ('a','pod'),
+            ('a','sock'),
+            ('a','sod'),
+            ('a','tot'),
+            ('i','deed'),
+            ('i','key'),
+            ('i','peel'),
+            ('i','teal'),
+            ('i','weave'),
+            ('u','boot'),
+            ('u','dune'),
+            ('u','hoop'),
+            ('u','toot'),
+            ('u','zoo'),]
 
 def extract_sound_file_info(filename,pattern):
     m = re.match(pattern,filename)
@@ -64,52 +93,42 @@ def lookup_shadower_wav(shadower_number,shadower_gender,production,vowel,word,at
         return os.path.join(production_dir,wav_path)
     return None
 
-
+def generate_path_mapping():
+    path_mapping = []
+    for m in models:
+        print(m)
+        for w in words:
+            print(w)
+            model_path = lookup_model_wav(m[0],m[1],w[0],w[1],ati_dir)
+            for s in shadowers:
+                baseline_path = lookup_shadower_wav(s[0],s[1],'Baseline',w[0],w[1],ati_dir)
+                shadowed_path = lookup_shadower_wav(s[0],s[1],'Shadow',w[0],w[1],ati_dir,model_number=m[0],model_gender=m[1])
+                path_mapping.append((baseline_path,model_path,shadowed_path))
+    return path_mapping
 
 if __name__ == '__main__':
-    ati_dir = '/home/michael/dev/Data/ATI'
-    model_dir = os.path.join(ati_dir,'Model')
-    shadower_dir = os.path.join(ati_dir,'Shadowers')
-    male_models = os.listdir(os.path.join(model_dir,'Male'))
-    female_models = os.listdir(os.path.join(model_dir,'Female'))
-    models = list(map(lambda x: (x,'Male'),male_models))
-    models += list(map(lambda x: (x,'Female'),female_models))
-    male_shadowers = os.listdir(os.path.join(shadower_dir,'Male'))
-    female_shadowers = os.listdir(os.path.join(shadower_dir,'Female'))
-    shadowers = list(map(lambda x: (x,'Male'),male_shadowers))
-    shadowers += list(map(lambda x: (x,'Female'),female_shadowers))
-
-    words = [('a','cot'),
-                ('a','pod'),
-                ('a','sock'),
-                ('a','sod'),
-                ('a','tot'),
-                ('i','deed'),
-                ('i','key'),
-                ('i','peel'),
-                ('i','teal'),
-                ('i','weave'),
-                ('u','boot'),
-                ('u','dune'),
-                ('u','hoop'),
-                ('u','toot'),
-                ('u','zoo'),]
-    with open(os.path.join(BASE_DIR,'ati_output8.txt'),'w') as f:
+    path_mapping = generate_path_mapping()
+    envelope_sims = phonetic_similarity(path_mapping)
+    spectral_sims = phonetic_similarity(path_mapping,sim_type = 'spectral_dtw')
+    mfcc_sims = phonetic_similarity(path_mapping,sim_type = 'mfcc_dtw')
+    with open(os.path.join(BASE_DIR,'ati_outputAllSims.txt'),'w') as f:
         csvw = csv.writer(f,delimiter='\t')
-        csvw.writerow(['Shadower_number','Shadower_gender','Model_number',
-                        'Model_gender','Voice_type','Vowel','Word','Base_to_Model_env_sim',
-                        'Shad_to_Model_env_sim'])
-
-        for m in models:
-            print(m)
-            for w in words:
-                print(w)
-                model_path = lookup_model_wav(m[0],m[1],w[0],w[1],ati_dir)
-                for s in shadowers:
-                    baseline_path = lookup_shadower_wav(s[0],s[1],'Baseline',w[0],w[1],ati_dir)
-                    shadowed_path = lookup_shadower_wav(s[0],s[1],'Shadow',w[0],w[1],ati_dir,model_number=m[0],model_gender=m[1])
-                    if model_path and baseline_path and shadowed_path:
-                        b_to_m_sim = envelope_similarity(baseline_path,model_path,num_bands=8)
-                        s_to_m_sim = envelope_similarity(shadowed_path,model_path,num_bands=8)
-                        csvw.writerow([s[0],s[1],m[0],m[1],VOICETYPE[m[0]],w[0],w[1],
-                                        b_to_m_sim,s_to_m_sim])
+        #csvw.writerow(['Shadower_number','Shadower_gender','Model_number',
+        #                'Model_gender','Voice_type','Vowel','Word','Base_to_Model_env_sim',
+        #                'Shad_to_Model_env_sim'])
+        csvw.writerow(['Baseline_filename','Model_filename','Shadowed_filename',
+                        'Base_to_Model_env_sim',
+                        'Shad_to_Model_env_sim',
+                        'Base_to_Model_spec_sim',
+                        'Shad_to_Model_spec_sim',
+                        'Base_to_Model_mfcc_sim',
+                        'Shad_to_Model_mfcc_sim',])
+        for i in range(len(envelope_sims)):
+            row = [os.path.split(envelope_sims[i][0])[1],
+                    os.path.split(envelope_sims[i][1])[1],
+                    os.path.split(envelope_sims[i][2])[1],
+                    envelope_sims[i][3],envelope_sims[i][4],
+                    spectral_sims[i][3],spectral_sims[i][4],
+                    mfcc_sims[i][3],mfcc_sims[i][4],
+                    ]
+            csvw.writerow(row)

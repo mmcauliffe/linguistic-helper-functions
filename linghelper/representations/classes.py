@@ -4,9 +4,10 @@ import copy
 from constants import ENGLISH_ONSETS  as ONSETS,ENGLISH_VOWEL_PATTERN as VOWEL_PATTERN
 
 class Word(object):
-    def __init__(self,orthography,transcription):
+    def __init__(self,orthography,transcription,frequency=0):
         self.orthography = orthography
         self.syllables = syllabify(transcription)
+        self.frequency = frequency
 
     def istitle(self):
         if self.orthography.istitle():

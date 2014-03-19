@@ -1,14 +1,14 @@
 import sys
-sys.path.append('/home/michael/dev/Linguistics/python-praat-scripts')
-from praatinterface import PraatLoader
+from linghelper.phonetics.praat import PraatLoader
 
 from scipy.spatial.distance import euclidean
 
 
-def mfcc_distance(filename_one, filename_two):
+def mfcc_distance(filename_one, filename_two, max_mel):
     scripts = {'mfcc_distance.praat':"""form Variables
                                             sentence firstfile
                                             sentence secondfile
+                                            real maxMel
                                         endform
 
                                         Read from file... 'firstfile$'
@@ -33,14 +33,15 @@ def mfcc_distance(filename_one, filename_two):
 
                                         echo 'mfcc_dist'"""}
     p = PraatLoader(additional_scripts=scripts)
-    distance = p.run_script('mfcc_distance.praat',filename_one, filename_two)
+    distance = p.run_script('mfcc_distance.praat',filename_one, filename_two, max_mel)
     return float(distance)
 
-def spectral_distance(filename_one, filename_two):
+def spectral_distance(filename_one, filename_two,max_freq):
     scripts = {'spec_distance.praat':"""
 form Variables
     sentence firstfile
     sentence secondfile
+    real maxFreq
 endform
 
 Read from file... 'firstfile$'
@@ -50,11 +51,11 @@ Read from file... 'secondfile$'
 second = selected()
 
 select first
-To Spectrogram... 0.005 8000 0.002 20 Gaussian
+To Spectrogram... 0.005 maxFreq 0.002 20 Gaussian
 first_spec = selected()
 
 select second
-To Spectrogram... 0.005 8000 0.002 20 Gaussian
+To Spectrogram... 0.005 maxFreq 0.002 20 Gaussian
 second_spec = selected()
 
 select first_spec
@@ -64,5 +65,5 @@ spec_dist = Get distance (weighted)
 
 echo 'spec_dist'"""}
     p = PraatLoader(additional_scripts=scripts)
-    distance = p.run_script('spec_distance.praat',filename_one, filename_two)
+    distance = p.run_script('spec_distance.praat',filename_one, filename_two,max_freq)
     return float(distance)
