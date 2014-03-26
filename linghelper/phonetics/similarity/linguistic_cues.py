@@ -38,7 +38,9 @@ def interpolate_pitch(pitch_track):
     f = interp1d(x,y)
     return f(times)
 
-
+def get_intensity_spline(intensity_track):
+    y = np.array([ intensity_track[k]['Intensity'] for k in sorted(intensity_track.keys()) if intensity_track[k]['Intensity'] != '--undefined--'])
+    return y
 
 def pitch_distance(filename_one, filename_two,praatpath,norm_level = True):
     p = PraatLoader(praatpath=praatpath)
@@ -75,14 +77,16 @@ def intensity_distance(filename_one, filename_two,praatpath,norm_level = True):
     
     output = p.run_script('intensity.praat', filename_one)
     intensity_one = to_time_based_dict(output)
-    intensity_one_dct = dct(intensity_one,norm='ortho')
+    intensity_spline = get_intensity_spline(intensity_one)
+    intensity_one_dct = dct(intensity_spline,norm='ortho')
     if norm_level:
         intensity_one_dct = intensity_one_dct[1:]
     intensity_one_dct = intensity_one_dct[0:3]
     
     output = p.run_script('intensity.praat', filename_two)
     intensity_two = to_time_based_dict(output)
-    intensity_two_dct = dct(intensity_two,norm='ortho')
+    intensity_spline = get_intensity_spline(intensity_two)
+    intensity_two_dct = dct(intensity_spline,norm='ortho')
     if norm_level:
         intensity_two_dct = intensity_two_dct[1:]
     intensity_two_dct = intensity_two_dct[0:3]

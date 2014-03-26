@@ -71,33 +71,37 @@ def generate_path_mapping():
 if __name__ == '__main__':
     numBands = 8
     path_mapping = generate_path_mapping()
-    print(len(path_mapping))
+    output = {}
+    print('calcing pitch similarities')
     pitch_sims = phonetic_similarity(path_mapping,sim_type='pitch_dct',praatpath='/home/michael/Documents/Linguistics/Tools/Praat/praat')
+    
+    print(len(pitch_sims))
+    print('calcing intensity similarities')
     intensity_sims = phonetic_similarity(path_mapping,sim_type='intensity_dct',praatpath='/home/michael/Documents/Linguistics/Tools/Praat/praat')
-    spectral_sims = phonetic_similarity(path_mapping,sim_type = 'spectral_dtw',praatpath='/home/michael/Documents/Linguistics/Tools/Praat/praat')
-    mfcc_sims = phonetic_similarity(path_mapping,sim_type = 'mfcc_dtw',praatpath='/home/michael/Documents/Linguistics/Tools/Praat/praat')
-    envelope_sims = phonetic_similarity(path_mapping)
-    print(len(envelope_sims))
+    print(len(intensity_sims))
+    #envelope_sims = phonetic_similarity(path_mapping)
+    #spectral_sims = phonetic_similarity(path_mapping,sim_type = 'spectral_dtw',praatpath='/home/michael/Documents/Linguistics/Tools/Praat/praat')
+    #mfcc_sims = phonetic_similarity(path_mapping,sim_type = 'mfcc_dtw',praatpath='/home/michael/Documents/Linguistics/Tools/Praat/praat')
     with open(os.path.join(BASE_DIR,'nz_outputAllSims.txt'),'w') as f:
         csvw = csv.writer(f,delimiter='\t')
         csvw.writerow(['Baseline_filename','Model_filename','Shadowed_filename',
-                        'Base_to_Model_env_sim',
-                        'Shad_to_Model_env_sim',
-                        'Base_to_Model_spec_sim',
-                        'Shad_to_Model_spec_sim',
-                        'Base_to_Model_mfcc_sim',
-                        'Shad_to_Model_mfcc_sim',
+                        #'Base_to_Model_env_sim',
+                        #'Shad_to_Model_env_sim',
+                        #'Base_to_Model_spec_sim',
+                        #'Shad_to_Model_spec_sim',
+                        #'Base_to_Model_mfcc_sim',
+                        #'Shad_to_Model_mfcc_sim',
                         'Base_to_Model_pitch_sim',
                         'Shad_to_Model_pitch_sim',
                         'Base_to_Model_intensity_sim',
                         'Shad_to_Model_intensity_sim',])
-        for i in range(len(envelope_sims)):
-            row = [os.path.split(envelope_sims[i][0])[1],
-                    os.path.split(envelope_sims[i][1])[1],
-                    os.path.split(envelope_sims[i][2])[1],
-                    envelope_sims[i][3],envelope_sims[i][4],
-                    spectral_sims[i][3],spectral_sims[i][4],
-                    mfcc_sims[i][3],mfcc_sims[i][4],
+        for i in range(len(path_mapping)):
+            row = [os.path.split(path_mapping[i][0])[1],
+                    os.path.split(path_mapping[i][1])[1],
+                    os.path.split(path_mapping[i][2])[1],
+                    #envelope_sims[i][3],envelope_sims[i][4],
+                    #spectral_sims[i][3],spectral_sims[i][4],
+                    #mfcc_sims[i][3],mfcc_sims[i][4],
                     pitch_sims[i][3],pitch_sims[i][4],
                     intensity_sims[i][3],intensity_sims[i][4],
                     ]

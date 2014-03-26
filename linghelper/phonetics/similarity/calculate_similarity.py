@@ -9,7 +9,9 @@ def phonetic_similarity(path_mapping,
                             num_bands = 8,
                             freq_lims = (80,7800),
                             erb = False,
-                            praatpath='praat'):
+                            praatpath='praat',
+                            words=None,
+                            vowels=None):
     output_values = []
     total_mappings = len(path_mapping)
     if sim_type == 'envelope':
@@ -39,17 +41,20 @@ def phonetic_similarity(path_mapping,
             if len(pm) == 2:
                 dist_val = praat_func(pm[0],pm[1],praatpath)
                 if dist_val is None:
+                    output_values.append([pm[0],pm[1],'NA'])
                     continue
                 sim_val = 1 / math.log(dist_val)
                 output_values.append([pm[0],pm[1],sim_val])
             elif len(pm) == 3:
                 dist_val1 = praat_func(pm[0],pm[1],praatpath)
                 if dist_val1 is None:
+                    output_values.append([pm[0],pm[1],pm[2],'NA','NA'])
                     continue
                 sim_val1 = 1 / math.log(dist_val1)
 
                 dist_val2 = praat_func(pm[1],pm[2],praatpath)
                 if dist_val2 is None:
+                    output_values.append([pm[0],pm[1],pm[2],'NA','NA'])
                     continue
                 sim_val2 = 1 / math.log(dist_val2)
                 output_values.append([pm[0],pm[1],pm[2],sim_val1,sim_val2])
