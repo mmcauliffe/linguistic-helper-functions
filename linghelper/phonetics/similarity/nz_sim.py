@@ -4,15 +4,13 @@ import sys
 import csv
 
 sys.path.append('/home/michael/dev/Linguistics/linguistic-helper-functions')
-sys.path.append('/home/michael/dev/Linguistics/python-praat-scripts')
-from linghelper.phonetics.similarity.envelope import envelope_similarity,calc_envelope,envelope_match
-from linghelper.phonetics.similarity.spectral import mfcc_distance,spectral_distance
 
+from linghelper.phonetics.similarity.calculate_similarity import phonetic_similarity
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-MODEL_DIR = os.path.normpath('/home/michael/dev/Data/NZDiph/AUModelTokens')
-NZ_DIR = os.path.normpath('/home/michael/dev/Data/NZDiph/NZSoundFiles')
+MODEL_DIR = os.path.normpath('/media/Data/Corpora/NZDiph/AUModelTokens')
+NZ_DIR = os.path.normpath('/media/Data/Corpora/NZDiph/NZSoundFiles')
 
 Shadowers = ['s101','s102','s103','s104','s105','s106','s107','s109','s110',
             's111','s112','s113','s114','s115','s117','s118','s119',
@@ -47,46 +45,60 @@ def get_shadower_path(word,shadower,production):
 def get_model_path(word):
     return os.path.join(MODEL_DIR,'%s.wav' % word)
 
+
+def generate_path_mapping():
+    path_mapping = []
+    for s in Shadowers:
+        print(s)
+        for w in Words:
+            model_path = get_model_path(w)
+            if not os.path.isfile(model_path):
+                continue
+            print(w)
+            for b in Block.keys():
+                if b == 'Baseline':
+                    continue
+                print(b)
+                shadowed_path = get_shadower_path(w,s,b)
+                baseline_path = get_shadower_path(w,s,'Baseline')
+                if not os.path.isfile(shadowed_path):
+                    continue
+                if not os.path.isfile(baseline_path):
+                    continue
+                path_mapping.append((baseline_path,model_path,shadowed_path))
+    return path_mapping
+
 if __name__ == '__main__':
     numBands = 8
-    with open(os.path.join(BASE_DIR,'nz_output8BandInfo.txt'),'w') as f:
+    path_mapping = generate_path_mapping()
+    print(len(path_mapping))
+    pitch_sims = phonetic_similarity(path_mapping,sim_type='pitch_dct',praatpath='/home/michael/Documents/Linguistics/Tools/Praat/praat')
+    intensity_sims = phonetic_similarity(path_mapping,sim_type='intensity_dct',praatpath='/home/michael/Documents/Linguistics/Tools/Praat/praat')
+    spectral_sims = phonetic_similarity(path_mapping,sim_type = 'spectral_dtw',praatpath='/home/michael/Documents/Linguistics/Tools/Praat/praat')
+    mfcc_sims = phonetic_similarity(path_mapping,sim_type = 'mfcc_dtw',praatpath='/home/michael/Documents/Linguistics/Tools/Praat/praat')
+    envelope_sims = phonetic_similarity(path_mapping)
+    print(len(envelope_sims))
+    with open(os.path.join(BASE_DIR,'nz_outputAllSims.txt'),'w') as f:
         csvw = csv.writer(f,delimiter='\t')
-        #csvw.writerow(['Shadower_number','Block'
-                        #'Word','shad_to_mod_env_sim','base_to_mod_env_sim',
-                        ##'mfcc_shad_to_mod','mfcc_mod_to_shad',
-                        ##'spec_shad_to_mod','spec_mod_to_shad',
-                        ##'mfcc_base_to_mod','mfcc_mod_to_base',
-                        ##'spec_base_to_mod','spec_mod_to_base'
-                        #])
-        csvw.writerow(['Baseline_filename','Shadowed_filename','Model_filename',
+        csvw.writerow(['Baseline_filename','Model_filename','Shadowed_filename',
                         'Base_to_Model_env_sim',
-                        'Shad_to_Model_env_sim']+ ['B%d_difference' % x for x in range(1,numBands+1)])
-
-        for s in Shadowers:
-            print(s)
-            for w in Words:
-                print(w)
-                for b in Block.keys():
-                    if b == 'Baseline':
-                        continue
-                    print(b)
-                    shadowed_path = get_shadower_path(w,s,b)
-                    model_path = get_model_path(w)
-                    baseline_path = get_shadower_path(w,s,'Baseline')
-
-                    if not os.path.isfile(shadowed_path):
-                        continue
-
-                    if not os.path.isfile(model_path):
-                        continue
-
-                    if not os.path.isfile(baseline_path):
-                        continue
-                    mod_env = calc_envelope(model_path,num_bands=numBands,erb=False)
-                    base_env = calc_envelope(baseline_path,num_bands=numBands,erb=False)
-                    shad_env = calc_envelope(shadowed_path,num_bands=numBands,erb=False)
-                    b_to_m_sim,b_to_m_bandScores = envelope_match(mod_env,base_env,returnBandScores =True)
-                    s_to_m_sim,s_to_m_bandScores = envelope_match(mod_env,shad_env,returnBandScores =True)
-                    bands = [ s_to_m_bandScores[x] - b_to_m_bandScores[x] for x in range(numBands)]
-                    csvw.writerow([os.path.split(baseline_path)[1], os.path.split(shadowed_path)[1], os.path.split(model_path)[1],
-                                    b_to_m_sim,s_to_m_sim] + bands)
+                        'Shad_to_Model_env_sim',
+                        'Base_to_Model_spec_sim',
+                        'Shad_to_Model_spec_sim',
+                        'Base_to_Model_mfcc_sim',
+                        'Shad_to_Model_mfcc_sim',
+                        'Base_to_Model_pitch_sim',
+                        'Shad_to_Model_pitch_sim',
+                        'Base_to_Model_intensity_sim',
+                        'Shad_to_Model_intensity_sim',])
+        for i in range(len(envelope_sims)):
+            row = [os.path.split(envelope_sims[i][0])[1],
+                    os.path.split(envelope_sims[i][1])[1],
+                    os.path.split(envelope_sims[i][2])[1],
+                    envelope_sims[i][3],envelope_sims[i][4],
+                    spectral_sims[i][3],spectral_sims[i][4],
+                    mfcc_sims[i][3],mfcc_sims[i][4],
+                    pitch_sims[i][3],pitch_sims[i][4],
+                    intensity_sims[i][3],intensity_sims[i][4],
+                    ]
+            csvw.writerow(row)

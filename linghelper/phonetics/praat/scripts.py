@@ -58,7 +58,7 @@ praatscripts = {
 
                     Read from file... 'filename$'
 
-                    To Pitch (ac)... 0.001 75.0 15 yes 0.03 0.45 0.01 0.35 0.14 600.0
+                    To Pitch (ac)... 0.025 75.0 15 yes 0.03 0.45 0.01 0.35 0.14 600.0
                     frames = Get number of frames
 
                     output$ = "Time"+tab$+"Pitch"+newline$
@@ -77,7 +77,7 @@ praatscripts = {
                     endform
 
                     Read from file... 'filename$'
-                    To Intensity... 100 0.001 yes
+                    To Intensity... 100 0.025 yes
 
                     frames = Get number of frames
 

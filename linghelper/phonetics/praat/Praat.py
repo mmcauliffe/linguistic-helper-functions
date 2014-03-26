@@ -19,7 +19,7 @@ class PraatLoader:
         self.scripts.update(additional_scripts)
         if praatpath:
             self.script_dir = os.path.join(os.path.dirname(praatpath),'praatScripts')
-            self.praat = 'praat'
+            self.praat = praatpath
         else:
             self.script_dir = os.path.join(os.path.dirname(__file__),'praatScripts')
             self.praat = 'praat'

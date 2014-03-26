@@ -4,9 +4,8 @@ import sys
 import csv
 
 sys.path.append('/home/michael/dev/Linguistics/linguistic-helper-functions')
-#from linghelper.phonetics.similarity.envelope import envelope_similarity,calc_envelope,envelope_match
 
-from calculate_similarity import phonetic_similarity
+from linghelper.phonetics.similarity.calculate_similarity import phonetic_similarity
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -23,7 +22,7 @@ VOICETYPE = {'225': 'mostattractive_CAL',
                 '316':'leasttypical_CAL',
                 '321':'mostattractive_CAL'}
 
-ati_dir = '/home/michael/dev/Data/ATI'
+ati_dir = '/media/Data/Corpora/ATI'
 model_dir = os.path.join(ati_dir,'Model')
 shadower_dir = os.path.join(ati_dir,'Shadowers')
 male_models = os.listdir(os.path.join(model_dir,'Male'))
@@ -73,9 +72,7 @@ def lookup_model_wav(model_number,model_gender,vowel,word,ati_dir):
     wav_path = '%s_subj%s_%s_%s.wav' % (gender, model_number, vowel, word)
     speaker_dir = os.path.join(ati_dir,'Model',model_gender,model_number)
     files = os.listdir(speaker_dir)
-    if wav_path in files:
-        return os.path.join(speaker_dir,wav_path)
-    return None
+    return os.path.join(speaker_dir,wav_path)
 
 def lookup_shadower_wav(shadower_number,shadower_gender,production,vowel,word,ati_dir,model_number=None,model_gender=None):
     shadower_string = ''
@@ -89,9 +86,7 @@ def lookup_shadower_wav(shadower_number,shadower_gender,production,vowel,word,at
                                                 production.lower(),shadower_string,vowel,word)
 
     files = os.listdir(production_dir)
-    if wav_path in files:
-        return os.path.join(production_dir,wav_path)
-    return None
+    return os.path.join(production_dir,wav_path)
 
 def generate_path_mapping():
     path_mapping = []
@@ -100,29 +95,40 @@ def generate_path_mapping():
         for w in words:
             print(w)
             model_path = lookup_model_wav(m[0],m[1],w[0],w[1],ati_dir)
+            if not os.path.isfile(model_path):
+                continue
             for s in shadowers:
                 baseline_path = lookup_shadower_wav(s[0],s[1],'Baseline',w[0],w[1],ati_dir)
+                
+                if not os.path.isfile(baseline_path):
+                    continue
                 shadowed_path = lookup_shadower_wav(s[0],s[1],'Shadow',w[0],w[1],ati_dir,model_number=m[0],model_gender=m[1])
+                
+                if not os.path.isfile(shadowed_path):
+                    continue
                 path_mapping.append((baseline_path,model_path,shadowed_path))
     return path_mapping
 
 if __name__ == '__main__':
     path_mapping = generate_path_mapping()
+    pitch_sims = phonetic_similarity(path_mapping,sim_type='pitch_dct',praatpath='/home/michael/Documents/Linguistics/Tools/Praat/praat')
+    intensity_sims = phonetic_similarity(path_mapping,sim_type='intensity_dct',praatpath='/home/michael/Documents/Linguistics/Tools/Praat/praat')
     envelope_sims = phonetic_similarity(path_mapping)
-    spectral_sims = phonetic_similarity(path_mapping,sim_type = 'spectral_dtw')
-    mfcc_sims = phonetic_similarity(path_mapping,sim_type = 'mfcc_dtw')
+    spectral_sims = phonetic_similarity(path_mapping,sim_type = 'spectral_dtw',praatpath='/home/michael/Documents/Linguistics/Tools/Praat/praat')
+    mfcc_sims = phonetic_similarity(path_mapping,sim_type = 'mfcc_dtw',praatpath='/home/michael/Documents/Linguistics/Tools/Praat/praat')
     with open(os.path.join(BASE_DIR,'ati_outputAllSims.txt'),'w') as f:
         csvw = csv.writer(f,delimiter='\t')
-        #csvw.writerow(['Shadower_number','Shadower_gender','Model_number',
-        #                'Model_gender','Voice_type','Vowel','Word','Base_to_Model_env_sim',
-        #                'Shad_to_Model_env_sim'])
         csvw.writerow(['Baseline_filename','Model_filename','Shadowed_filename',
                         'Base_to_Model_env_sim',
                         'Shad_to_Model_env_sim',
                         'Base_to_Model_spec_sim',
                         'Shad_to_Model_spec_sim',
                         'Base_to_Model_mfcc_sim',
-                        'Shad_to_Model_mfcc_sim',])
+                        'Shad_to_Model_mfcc_sim',
+                        'Base_to_Model_pitch_sim',
+                        'Shad_to_Model_pitch_sim',
+                        'Base_to_Model_intensity_sim',
+                        'Shad_to_Model_intensity_sim',])
         for i in range(len(envelope_sims)):
             row = [os.path.split(envelope_sims[i][0])[1],
                     os.path.split(envelope_sims[i][1])[1],
@@ -130,5 +136,7 @@ if __name__ == '__main__':
                     envelope_sims[i][3],envelope_sims[i][4],
                     spectral_sims[i][3],spectral_sims[i][4],
                     mfcc_sims[i][3],mfcc_sims[i][4],
+                    pitch_sims[i][3],pitch_sims[i][4],
+                    intensity_sims[i][3],intensity_sims[i][4],
                     ]
             csvw.writerow(row)
