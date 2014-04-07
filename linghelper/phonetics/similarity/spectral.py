@@ -2,7 +2,7 @@ import sys
 from linghelper.phonetics.praat import PraatLoader
 
 
-def mfcc_distance(filename_one, filename_two, max_mel,praatpath):
+def mfcc_distance(filename_one, filename_two, max_mel):
     scripts = {'mfcc_distance.praat':"""
         form Variables
             sentence firstfile
@@ -17,11 +17,11 @@ def mfcc_distance(filename_one, filename_two, max_mel,praatpath):
         second = selected()
 
         select first
-        To MFCC... 20 0.015 0.005 100.0 100.0 0.0
+        To MFCC... 20 0.015 0.005 100.0 100.0 maxMel
         first_mfcc = selected()
 
         select second
-        To MFCC... 20 0.015 0.005 100.0 100.0 0.0
+        To MFCC... 20 0.015 0.005 100.0 100.0 maxMel
         second_mfcc = selected()
 
 
@@ -31,11 +31,11 @@ def mfcc_distance(filename_one, filename_two, max_mel,praatpath):
         mfcc_dist = Get distance (weighted)
 
         echo 'mfcc_dist'"""}
-    p = PraatLoader(praatpath=praatpath,additional_scripts=scripts)
+    p = PraatLoader(additional_scripts=scripts)
     distance = p.run_script('mfcc_distance.praat',filename_one, filename_two, max_mel)
     return float(distance)
 
-def spectral_distance(filename_one, filename_two,max_freq,praatpath):
+def spectral_distance(filename_one, filename_two,max_freq):
     scripts = {'spec_distance.praat':"""
         form Variables
             sentence firstfile
@@ -63,6 +63,6 @@ def spectral_distance(filename_one, filename_two,max_freq,praatpath):
         spec_dist = Get distance (weighted)
         
         echo 'spec_dist'"""}
-    p = PraatLoader(praatpath='/home/michael/Documents/Linguistics/Tools/Praat/praat',additional_scripts=scripts)
+    p = PraatLoader(additional_scripts=scripts)
     distance = p.run_script('spec_distance.praat',filename_one, filename_two,max_freq)
     return float(distance)

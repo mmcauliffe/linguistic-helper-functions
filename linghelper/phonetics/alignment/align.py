@@ -9,7 +9,9 @@ from scipy.signal import resample
 sr_model = 16000
 
 htk_root = ''
-hmm_dir = '/home/michael/dev/Linguistics/Tools/model'
+from linghelper.settings import HMM_MODEL_DIR as hmm_dir
+if hmm_dir == '' or not os.path.exists(hmm_dir):
+    raise(ImportError('Please specify a HMM_MODEL_DIR variable as the absolute path to a directory containing HMM models in a linghelper_settings.py file located on your path'))
 tmp_dir = os.path.join(hmm_dir,'tmp')
 
 def prep_wav(wav_path,output_path):
