@@ -2,77 +2,77 @@ import numpy as np
 from scipy.spatial.distance import euclidean
 import operator
 
-from .media.constants import costs
+#from .media.constants import costs
 
-def  minEditDist(target, source,distOnly=False):
-    ''' Computes the min edit distance from target to source. Figure 3.25 '''
-    def insertCost(seg):
-        return 1
+#def  minEditDist(target, source,distOnly=False):
+    #''' Computes the min edit distance from target to source. Figure 3.25 '''
+    #def insertCost(seg):
+        #return 1
 
-    def deleteCost(seg):
-        return 1
+    #def deleteCost(seg):
+        #return 1
 
-    def substCost(segone,segtwo):
-        if segone == segtwo:
-            return 0
-        segone = segone.lower()
-        segtwo = segtwo.lower()
-        if (segone,segtwo) in costs:
-            return costs[(segone,segtwo)]
-        if (segtwo,segone) in costs:
-            return costs[(segtwo,segone)]
-        return 2
+    #def substCost(segone,segtwo):
+        #if segone == segtwo:
+            #return 0
+        #segone = segone.lower()
+        #segtwo = segtwo.lower()
+        #if (segone,segtwo) in costs:
+            #return costs[(segone,segtwo)]
+        #if (segtwo,segone) in costs:
+            #return costs[(segtwo,segone)]
+        #return 2
 
-    target = list(target)
-    source = list(source)
+    #target = list(target)
+    #source = list(source)
 
-    n = len(target)
-    m = len(source)
+    #n = len(target)
+    #m = len(source)
 
-    distance = [[0 for i in range(m+1)] for j in range(n+1)]
-    pointers = [[(0,0) for i in range(m+1)] for j in range(n+1)]
+    #distance = [[0 for i in range(m+1)] for j in range(n+1)]
+    #pointers = [[(0,0) for i in range(m+1)] for j in range(n+1)]
 
-    for i in range(1,n+1):
-        distance[i][0] = distance[i-1][0] + insertCost(target[i-1])
-        pointers[i][0] = (i-1,0)
+    #for i in range(1,n+1):
+        #distance[i][0] = distance[i-1][0] + insertCost(target[i-1])
+        #pointers[i][0] = (i-1,0)
 
-    for j in range(1,m+1):
-        distance[0][j] = distance[0][j-1] + deleteCost(source[j-1])
-        pointers[0][j] = (0,j-1)
+    #for j in range(1,m+1):
+        #distance[0][j] = distance[0][j-1] + deleteCost(source[j-1])
+        #pointers[0][j] = (0,j-1)
 
-    for i in range(1,n+1):
-        for j in range(1,m+1):
-            dists = [distance[i-1][j]+1,
-                                distance[i][j-1]+1,
-                                distance[i-1][j-1]+substCost(source[j-1],target[i-1])]
-            ind = np.argmin(dists)
-            distance[i][j] = dists[ind]
-            if ind == 0:
-                pointers[i][j] = (i-1,j)
-            elif ind == 1:
-                pointers[i][j] = (i,j-1)
-            else:
-                pointers[i][j] = (i-1,j-1)
-    if distOnly:
-        return distance[n][m]
-    #alignment
-    i = n
-    j = m
-    mapping = []
-    finished = False
-    while not finished:
-        if i == 0 and j == 0:
-            finished = True
-        newi,newj = pointers[i][j]
-        if newi != i and newj != j:
-            mapping.append([target[i-1],source[j-1]])
-        elif newi != i:
-            mapping.append([target[i-1],'.'])
-        elif newj != j:
-            mapping.append(['.',source[j-1]])
-        i,j = newi,newj
-    mapping.reverse()
-    return distance[n][m],mapping
+    #for i in range(1,n+1):
+        #for j in range(1,m+1):
+            #dists = [distance[i-1][j]+1,
+                                #distance[i][j-1]+1,
+                                #distance[i-1][j-1]+substCost(source[j-1],target[i-1])]
+            #ind = np.argmin(dists)
+            #distance[i][j] = dists[ind]
+            #if ind == 0:
+                #pointers[i][j] = (i-1,j)
+            #elif ind == 1:
+                #pointers[i][j] = (i,j-1)
+            #else:
+                #pointers[i][j] = (i-1,j-1)
+    #if distOnly:
+        #return distance[n][m]
+    ##alignment
+    #i = n
+    #j = m
+    #mapping = []
+    #finished = False
+    #while not finished:
+        #if i == 0 and j == 0:
+            #finished = True
+        #newi,newj = pointers[i][j]
+        #if newi != i and newj != j:
+            #mapping.append([target[i-1],source[j-1]])
+        #elif newi != i:
+            #mapping.append([target[i-1],'.'])
+        #elif newj != j:
+            #mapping.append(['.',source[j-1]])
+        #i,j = newi,newj
+    #mapping.reverse()
+    #return distance[n][m],mapping
 
     #while i > -1 and j > -1:
         #candidates = []
@@ -148,15 +148,15 @@ def DTW(firstTrans,secondTrans,costs=None,distOnly=True):
     return distMat[len(firstTrans)-1][len(secondTrans)-1],mapping
 
 def generate_distance_matrix(source,target):
-    sLen = len(source)
-    tLen = len(target)
-    distMat = np.zeros(sLen,tLen)
+    sLen = source.shape[0]
+    tLen = target.shape[0]
+    distMat = np.zeros((sLen,tLen))
     for i in range(sLen):
         for j in range(tLen):
             distMat[i,j] = euclidean(source[i],target[j])
     return distMat
 
-def regularDTW(distMat):
+def regularDTW(distMat,distOnly=True):
     sLen,tLen = distMat.shape
     
     totalDistance = np.zeros(sLen+1,tLen+1)
@@ -172,6 +172,9 @@ def regularDTW(distMat):
             minPrevDistance, direction = min(enumerate([totalDistance[i,j],totalDistance[i,j+1],totalDistance[i+1,j]]), key=operator.itemgetter(1))
             totalDistance[i+1,j+1] = totalDistance[i+1,j+1] + minPrevDistance
             minDirection[i,j] = direction
+    
+    if distOnly:
+        return totalDistance[sLen,tLen]
     
     mapping = zeros(max([sLen,tLen])*2,2)
     mapping[len(mapping),1] = sLen
