@@ -1,84 +1,79 @@
-from linghelper.phonetics.similarity.envelope import calc_envelope, correlate_envelopes
-from linghelper.phonetics.similarity.spectral import mfcc_distance,spectral_distance
-from linghelper.phonetics.similarity.linguistic_cues import pitch_distance, intensity_distance
+from linghelper.phonetics.representations.amplitude_envelope import to_envelopes
+from linghelper.phonetics.representations.mfcc import to_mfcc,freq_to_mel
+from linghelper.phonetics.representations.prosody import to_pitch, to_intensity
+from linghelper.distance.dtw import dtw_distance
+from linghelper.distance.xcorr import xcorr_distance
+from linghelper.distance.dct import dct_distance
+
 import math
 
 
+
 def phonetic_similarity(path_mapping,
-                            sim_type = 'envelope',
+                            representation = 'envelope',
+                            match_algorithm = 'xcorr',
                             num_bands = 8,
                             freq_lims = (80,7800),
                             erb = False,
                             words=None,
-                            vowels=None):
+                            vowels=None,
+                            output_sim = True):
     output_values = []
     total_mappings = len(path_mapping)
-    if sim_type == 'envelope':
-        envelope_cache = {}
+    cache = {}
+    if representation == 'envelope':
         for i,pm in enumerate(path_mapping):
-            if i % 10 == 0:
-                print('processed file %d of %d' % (i,total_mappings))
+            if i % 50 == 0:
+                print('Mapping %d of %d converted to envelopes' % (i,total_mappings))
             for filepath in pm:
-                if filepath not in envelope_cache:
-                    envelope_cache[filepath] = calc_envelope(filepath,num_bands,freq_lims,erb)
-
-            if len(pm) == 2:
-                sim_val = correlate_envelopes(envelope_cache[pm[0]],envelope_cache[pm[1]])
-                output_values.append([pm[0],pm[1],sim_val])
-            elif len(pm) == 3:
-                sim_val1 = correlate_envelopes(envelope_cache[pm[0]],envelope_cache[pm[1]])
-                sim_val2 = correlate_envelopes(envelope_cache[pm[1]],envelope_cache[pm[2]])
-                output_values.append([pm[0],pm[1],pm[2], sim_val1,sim_val2])
-    elif 'dct' in sim_type:
-        if sim_type == 'pitch_dct':
-            praat_func = pitch_distance
-        elif sim_type == 'intensity_dct':
-            praat_func = intensity_distance
+                if filepath not in cache:
+                    cache[filepath] = calc_envelope(filepath,num_bands,freq_lims,erb)
+    elif representation == 'mfcc':
+        maxMel = freq_to_mel(freq_lims[1])
         for i,pm in enumerate(path_mapping):
-            if i % 10 == 0:
-                print('processed file %d of %d' % (i,total_mappings))
-            if len(pm) == 2:
-                dist_val = praat_func(pm[0],pm[1])
-                if dist_val is None:
-                    output_values.append([pm[0],pm[1],'NA'])
-                    continue
-                sim_val = 1 / math.log(dist_val)
-                output_values.append([pm[0],pm[1],sim_val])
-            elif len(pm) == 3:
-                dist_val1 = praat_func(pm[0],pm[1])
-                if dist_val1 is None:
-                    output_values.append([pm[0],pm[1],pm[2],'NA','NA'])
-                    continue
-                sim_val1 = 1 / math.log(dist_val1)
-
-                dist_val2 = praat_func(pm[2],pm[1])
-                if dist_val2 is None:
-                    output_values.append([pm[0],pm[1],pm[2],'NA','NA'])
-                    continue
-                sim_val2 = 1 / math.log(dist_val2)
-                output_values.append([pm[0],pm[1],pm[2],sim_val1,sim_val2])
-    else:
-
-        if sim_type == 'spectral_dtw':
-            spec_max = freq_lims[1]
-            praat_func = spectral_distance
-        elif sim_type == 'mfcc_dtw':
-            spec_max = 2595 * math.log10(1+ (freq_lims[1]/700))
-            praat_func = mfcc_distance
+            if i % 50 == 0:
+                print('Mapping %d of %d converted to MFCCs' % (i,total_mappings))
+            for filepath in pm:
+                if filepath not in cache:
+                    cache[filepath] = to_mfcc(filepath,20,0.015,0.005,maxMel)
+    elif representation == 'pitch':
         for i,pm in enumerate(path_mapping):
-            if i % 10 == 0:
-                print('processed file %d of %d' % (i,total_mappings))
-            if len(pm) == 2:
-                dist_val = praat_func(pm[0],pm[1],spec_max)
-                sim_val = 1 / math.log(dist_val)
-                output_values.append([pm[0],pm[1],sim_val])
-            elif len(pm) == 3:
-                dist_val1 = praat_func(pm[0],pm[1],spec_max)
-                sim_val1 = 1 / math.log(dist_val1)
+            if i % 50 == 0:
+                print('Mapping %d of %d converted to pitch' % (i,total_mappings))
+            for filepath in pm:
+                if filepath not in cache:
+                    cache[filepath] = to_pitch(filepath)
+    elif representation == 'intensity':
+        for i,pm in enumerate(path_mapping):
+            if i % 50 == 0:
+                print('Mapping %d of %d converted to intensity' % (i,total_mappings))
+            for filepath in pm:
+                if filepath not in cache:
+                    cache[filepath] = to_intensity(filepath)
+                    
+    if match_algorithm == 'xcorr':
+        dist_func = xcorr_distance
+    elif match_algorithm == 'dtw':
+        dist_func = dtw_distance
+    elif match_algorithm == 'dct':
+        dist_func = dct_distance
+        
+    for i,pm in enumerate(path_mapping):
+        if i % 50 == 0:
+            print('Mapping %d of %d %sed' % (i,total_mappings,match_algorithm))
 
-                dist_val2 = praat_func(pm[2],pm[1],spec_max)
-                sim_val2 = 1 / math.log(dist_val2)
-
-                output_values.append([pm[0],pm[1],pm[2],sim_val1,sim_val2])
+        if len(pm) == 2:
+            dist_val = dist_func(cache[pm[0]],cache[pm[1]])
+            if output_sim:
+                dist_val = 1/math.pow(math.e,dist_val)
+            output_values.append([pm[0],pm[1],dist_val])
+        elif len(pm) == 3:
+            dist_val1 = dist_func(cache[pm[0]],cache[pm[1]])
+            dist_val2 = dist_func(cache[pm[2]],cache[pm[1]])
+            if output_sim:
+                dist_val1 = 1/math.pow(math.e,dist_val1)
+                dist_val2 = 1/math.pow(math.e,dist_val2)
+            output_values.append([pm[0],pm[1],pm[2], dist_val1,dist_val2])
+    
     return output_values
 

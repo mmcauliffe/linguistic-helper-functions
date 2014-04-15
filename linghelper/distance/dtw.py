@@ -147,13 +147,17 @@ def DTW(firstTrans,secondTrans,costs=None,distOnly=True):
     mapping.reverse()
     return distMat[len(firstTrans)-1][len(secondTrans)-1],mapping
 
+def dtw_distance(source,target):
+    distMat = generate_distance_matrix(source,target)
+    return regularDTW(distMat)
+
 def generate_distance_matrix(source,target):
     sLen = source.shape[0]
     tLen = target.shape[0]
     distMat = np.zeros((sLen,tLen))
     for i in range(sLen):
         for j in range(tLen):
-            distMat[i,j] = euclidean(source[i],target[j])
+            distMat[i,j] = euclidean(source[:,i],target[:,j])
     return distMat
 
 def regularDTW(distMat,distOnly=True):
