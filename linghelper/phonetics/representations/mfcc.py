@@ -1,4 +1,4 @@
-import math.log10
+from math import log10
 
 from linghelper.phonetics.praat import PraatLoader
 from linghelper.phonetics.praat.helper import to_array
@@ -6,7 +6,7 @@ from linghelper.phonetics.praat.helper import to_array
 
 
 def freq_to_mel(freq):
-    return 2595 * math.log10(1+ (freq/700))
+    return 2595 * log10(1+ (freq/700))
 
 def to_mfcc(filename,numCC,windowLength,timeStep,max_mel):
     scripts = {'mfcc.praat':"""

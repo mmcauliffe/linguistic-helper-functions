@@ -1,4 +1,4 @@
-import math.log
+from math import log
 import numpy as np
 from scipy.signal import correlate,correlate2d,fftconvolve
 
@@ -21,7 +21,7 @@ def xcorr_distance(e1,e2):
     matchVal = matchSum[maxInd]/num_bands
     #if returnBandScores:
     #    return matchVal, [x[maxInd] for x in corrs]
-    return -1*math.log(matchVal)
+    return -1*log(matchVal)
 
 #def fft_correlate_envelopes(e1,e2):
     #length_diff = e1.shape[0] - e2.shape[0]

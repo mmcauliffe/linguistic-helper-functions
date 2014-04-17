@@ -1,66 +1,49 @@
-import math
+from numpy import exp,log,abs,sum,sqrt,array
 
-import numpy as np
+from scipy.signal import filtfilt,butter,hilbert,resample
+from linghelper.phonetics.signal.helper import preproc,make_erb_cfs
 
-from scipy.io import wavfile
-from scipy.signal import filtfilt,butter,hilbert,lfilter,resample
+def to_envelopes(path,num_bands,freq_lims,gammatone):
+    sr, proc = preproc(path)
+    sr_env = 60
+    t = len(proc)/sr
+    numsamp = t * sr_env * 2
+    envelopes = []
+    if gammatone:
+        cfs = make_erb_cfs(freq_lims,num_bands)
 
-def preproc(sig,sr,newSr=16000):
-    t = len(sig)/sr
-    numsamp = t * newSr
-    proc = resample(sig,numsamp)
-    #proc = lfilter(1, [1, -0.95],sig)
-    denom = math.sqrt(np.mean([math.pow(x,2) for x in proc]))
-    proc = [ x/denom *0.03 for x in proc]
-    return newSr,proc
+        filterOrder = 4 # filter order
+        gL = 2**nextpow2(0.128*sr) # gammatone filter length at least 128 ms
+        b = 1.019*24.7*(4.37*cfs/1000+1) # rate of decay or bandwidth
+        tc = np.zeros(cfs.shape)  # Initialise time lead
+        phase = 0
 
-def to_envelopes(path,num_bands,freq_lims,erb):
-    sr,sig = wavfile.read(path)
-    sr, proc = preproc(sig,sr)
-    if erb:
-        env = snd2ERBenv(proc,sr,freq_lims,num_bands,60)
+        tpt=(2*pi)/sr
+        gain=((1.019*b*tpt)**filterOrder)/6 # based on integral of impulse
+
+        tmp_t = np.arange(gL)/sr
+
+        # calculate impulse response
+        for i in range(num_bands):
+            gt = gain[i]*fs**3*tmp_t**(filterOrder-1)*exp(-2*pi*b[i]*tmp_t)*cos(2*pi*cfs[i]*tmp_t+phase)
+            bm = fftfilt(gt,x)
+            env = abs(hilbert(bm))
+            env = resample(env,numsamp)
+            denom = sqrt(sum(env**2))
+            env = [x/denom for x in env]
+            envelopes.append(env)
     else:
-        env = snd2env(proc,sr,freq_lims,num_bands,60)
-    return np.array(env).T
-    
-def snd2env(s, sr_orig, freq_range, num_bands, sr_env):
-    bandLo = [ freq_range[0]*math.pow(math.exp(math.log(freq_range[1]/freq_range[0])/num_bands),x) for x in range(num_bands)]
-    bandHi = [ freq_range[0]*math.pow(math.exp(math.log(freq_range[1]/freq_range[0])/num_bands),x+1) for x in range(num_bands)]
+        bandLo = [ freq_lims[0]*exp(log(freq_lims[1]/freq_lims[0])/num_bands)**x for x in range(num_bands)]
+        bandHi = [ freq_lims[0]*exp(log(freq_lims[1]/freq_lims[0])/num_bands)**(x+1) for x in range(num_bands)]
 
-    e = []
-    t = len(s)/sr_orig
-    numsamp = t * sr_env * 2
-    for i in range(num_bands):
-        b, a = butter(2,(bandLo[i]/(sr_orig/2),bandHi[i]/(sr_orig/2)), btype = 'bandpass')
-        env = filtfilt(b,a,s)
-        env = np.abs(hilbert(env))
-        env = resample(env,numsamp)
-        denom = math.sqrt(sum(np.power(env,2)))
-        env = [x/denom for x in env]
-        e.append(env)
-
-    return e
-
-def snd2ERBenv(s,SR,freq_range,num_bands, sr_env):
-    cfs = erbspace(freq_range[0],freq_range[1],num_bands)
-    e = []
-    t = len(s)/SR
-    numsamp = t * sr_env * 2
-    #bEnv, aEnv = butter(4, EnvSr/(SR/2),btype = 'low')
-    for i in range(num_bands):
-        bw = ERB(cfs[i])
-        bandLo = cfs[i] - (bw/2)
-        bandHi = cfs[i] + (bw/2)
-        b, a = butter(2,(bandLo/(SR/2),bandHi/(SR/2)), btype = 'bandpass')
-        env = filtfilt(b,a,s)
-        env = np.abs(hilbert(env))
-        env = resample(env,numsamp)
-        denom = math.sqrt(sum(np.power(env,2)))
-        env = [x/denom for x in env]
-        e.append(env)
-    return e
+        for i in range(num_bands):
+            b, a = butter(2,(bandLo[i]/(sr/2),bandHi[i]/(sr/2)), btype = 'bandpass')
+            env = filtfilt(b,a,proc)
+            env = abs(hilbert(env))
+            env = resample(env,numsamp)
+            denom = sqrt(sum(env**2))
+            env = [x/denom for x in env]
+            envelopes.append(env)
+    return array(envelopes).T
     
 
-def ERB(cf):
-    erb = 24.7 * (4.37*(cf/1000) + 1)
-    return erb
