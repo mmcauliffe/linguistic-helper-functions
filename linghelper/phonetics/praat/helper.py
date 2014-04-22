@@ -2,10 +2,10 @@ from numpy import array
 import re
 
 def to_array(in_string):
-    lines = in_string.split('\n')
+    lines = in_string.splitlines()
     output = []
     for l in lines:
-        output.append(map(float,l.split('\t')))
+        output.append(list(map(float,l.split('\t'))))
     return array(output)
 
 def to_time_based_dict(praat_output,remove_undefined = False):

@@ -31,7 +31,7 @@ def to_mfcc(filename,numCC,windowLength,timeStep,max_mel):
         for i from 1 to numRows
             for j from 1 to numCC
                 val = Get value... i j
-                val$ = fixed(val,3)
+                val$ = fixed$(val,3)
                 output$ = output$ + val$
                 if j != numCC
                     output$ = output$ + tab$
@@ -44,5 +44,5 @@ def to_mfcc(filename,numCC,windowLength,timeStep,max_mel):
 
         echo 'output$'"""}
     p = PraatLoader(additional_scripts=scripts)
-    output = p.run_script('mfcc.praat',*args)
+    output = p.run_script('mfcc.praat',filename,numCC,windowLength,timeStep,max_mel)
     return to_array(output)

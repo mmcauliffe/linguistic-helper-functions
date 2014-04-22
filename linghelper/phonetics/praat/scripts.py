@@ -57,11 +57,12 @@ praatscripts = {
 'pitch.praat': """
     form Variables
       sentence filename
+      real timestep
     endform
 
     Read from file... 'filename$'
 
-    To Pitch (ac)... 0.025 75.0 15 yes 0.03 0.45 0.01 0.35 0.14 600.0
+    To Pitch (ac)... 'timestep' 75.0 15 yes 0.03 0.45 0.01 0.35 0.14 600.0
     frames = Get number of frames
 
     output$ = "Time"+tab$+"Pitch"+newline$
@@ -78,10 +79,11 @@ praatscripts = {
 'intensity.praat': """
     form Variables
       sentence filename
+      real timestep
     endform
 
     Read from file... 'filename$'
-    To Intensity... 100 0.025 yes
+    To Intensity... 100 'timestep' yes
 
     frames = Get number of frames
 
