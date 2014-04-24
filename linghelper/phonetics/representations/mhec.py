@@ -1,5 +1,5 @@
 
-from numpy import pi,exp,zeros,hanning,sum,arange,cos
+from numpy import pi,exp,zeros,hanning,sum,arange,cos,sqrt
 from scipy.fftpack import dct
 from scipy.signal import hilbert
 from linghelper.phonetics.signal import nextpow2,preproc,make_erb_cfs,fftfilt
@@ -12,7 +12,7 @@ def to_mhec(path,numCC, num_bands, freq_lims, window_length,time_step):
     
     nperseg = int(window_length*sr)
     noverlap = int(time_step*sr)
-    window = hanning(window_length)
+    window = sqrt(hanning(window_length))
     
     cfs = make_erb_cfs(freq_lims,num_bands)
 

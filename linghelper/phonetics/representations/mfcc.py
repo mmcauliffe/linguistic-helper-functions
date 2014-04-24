@@ -1,4 +1,4 @@
-from numpy import log,fft,array,zeros
+from numpy import log,fft,array,zeros, floor,exp,sqrt,dot,arange
 
 from linghelper.phonetics.praat import PraatLoader
 from linghelper.phonetics.praat.helper import to_array
@@ -9,31 +9,28 @@ from scipy.io import wavfile
 
 
 
-def melFilterBank(blockSize):
-    numBands = int(numCoefficients)
-    maxMel = int(freqToMel(maxHz))
-    minMel = int(freqToMel(minHz))
+def melFilterBank(blockSize,numBands,minMel,maxMel):
 
     # Create a matrix for triangular filters, one row per filter
     filterMatrix = zeros((numBands, blockSize))
 
-    melRange = array(range(numBands + 2))
+    melRange = arange(numBands + 2)
 
     melCenterFilters = melRange * (maxMel - minMel) / (numBands + 1) + minMel
 
     # each array index represent the center of each triangular filter
-    aux = numpy.log(1 + 1000.0 / 700.0) / 1000.0
-    aux = (numpy.exp(melCenterFilters * aux) - 1) / 22050
+    aux = log(1 + 1000.0 / 700.0) / 1000.0
+    aux = (exp(melCenterFilters * aux) - 1) / 22050
     aux = 0.5 + 700 * blockSize * aux
-    aux = numpy.floor(aux)  # Arredonda pra baixo
-    centerIndex = numpy.array(aux, int)  # Get int values
+    aux = floor(aux)  
+    centerIndex = array(aux, int)
 
-    for i in xrange(numBands):
+    for i in range(numBands):
         start, centre, end = centerIndex[i:i + 3]
-        k1 = numpy.float32(centre - start)
-        k2 = numpy.float32(end - centre)
-        up = (numpy.array(xrange(start, centre)) - start) / k1
-        down = (end - numpy.array(xrange(centre, end))) / k2
+        k1 = float64(centre - start)
+        k2 = float64(end - centre)
+        up = (arange(start, centre)) - start) / k1
+        down = (end - arange(centre, end))) / k2
 
         filterMatrix[i][start:centre] = up
         filterMatrix[i][centre:end] = down
@@ -47,15 +44,34 @@ def melToFreq(mel):
     return 700 * (math.exp(freq / 1127.01048 - 1))
 
 def to_mfcc_python(filename, freq_lims,numCC,windowLength,timeStep):
-    sampleRate, signal = wavfile.read(filename)
+    sr, signal = wavfile.read(filename)
+    
     minHz = freq_lims[0]
     maxHz = freq_lims[1]
-    win
-    complexSpectrum = numpy.fft(signal)
-    powerSpectrum = abs(complexSpectrum) ** 2
-    filteredSpectrum = numpy.dot(powerSpectrum, melFilterBank())
-    logSpectrum = numpy.log(filteredSpectrum)
-    dctSpectrum = dct(logSpectrum, type=2)  # MFCC :)
+    maxMel = int(freqToMel(maxHz))
+    minMel = int(freqToMel(minHz))
+    
+    nperseg = int(window_length*sr)
+    noverlap = int(time_step*sr)
+    window = sqrt(hanning(nperseg))
+    
+    filterbank = melFilterBank(nperseg,numCC+1,minMel,maxMel)
+    
+    step = nperseg - noverlap
+    indices = arange(0, proc.shape[-1]-nperseg+1, step)
+    num_frames = len(indices)
+    
+    mfccs = zeros(num_frames,numCC)
+    
+    for k,ind in enumerate(indices):
+        seg = signal[ind:ind+nperseg] * window
+        complexSpectrum = fft(seg)
+        powerSpectrum = abs(complexSpectrum) ** 2
+        filteredSpectrum = dot(powerSpectrum, filterbank)
+        logSpectrum = log(filteredSpectrum)
+        dctSpectrum = dct(logSpectrum, norm='ortho')
+        mfccs[k,:] = dctSpectrum[1:]
+    return mfccs
 
 def to_mfcc(filename,numCC,windowLength,timeStep,max_mel):
     scripts = {'mfcc.praat':"""
