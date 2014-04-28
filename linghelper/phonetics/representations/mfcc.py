@@ -2,6 +2,7 @@ from numpy import log,fft,array,zeros, floor,exp,sqrt,dot,arange
 
 from linghelper.phonetics.praat import PraatLoader
 from linghelper.phonetics.praat.helper import to_array
+from linghelper.phonetics.signal import preproc
 
 import numpy
 from scipy.fftpack import dct
@@ -29,8 +30,8 @@ def melFilterBank(blockSize,numBands,minMel,maxMel):
         start, centre, end = centerIndex[i:i + 3]
         k1 = float64(centre - start)
         k2 = float64(end - centre)
-        up = (arange(start, centre)) - start) / k1
-        down = (end - arange(centre, end))) / k2
+        up = (arange(start, centre) - start) / k1
+        down = (end - arange(centre, end)) / k2
 
         filterMatrix[i][start:centre] = up
         filterMatrix[i][centre:end] = down
@@ -43,15 +44,15 @@ def freqToMel(freq):
 def melToFreq(mel):
     return 700 * (math.exp(freq / 1127.01048 - 1))
 
-def to_mfcc_python(filename, freq_lims,numCC,windowLength,timeStep):
-    sr, signal = wavfile.read(filename)
+def to_mfcc_python(filename, freq_lims,numCC,win_len,time_step):
+    sr, proc = preproc(filename)
     
     minHz = freq_lims[0]
     maxHz = freq_lims[1]
     maxMel = int(freqToMel(maxHz))
     minMel = int(freqToMel(minHz))
     
-    nperseg = int(window_length*sr)
+    nperseg = int(win_len*sr)
     noverlap = int(time_step*sr)
     window = sqrt(hanning(nperseg))
     
@@ -73,7 +74,8 @@ def to_mfcc_python(filename, freq_lims,numCC,windowLength,timeStep):
         mfccs[k,:] = dctSpectrum[1:]
     return mfccs
 
-def to_mfcc(filename,numCC,windowLength,timeStep,max_mel):
+def to_mfcc(filename, freq_lims, numCC,win_len,time_step):
+    max_mel = freqToMel(freq_lims[1])
     scripts = {'mfcc.praat':"""
         form Variables
             sentence file
@@ -109,7 +111,7 @@ def to_mfcc(filename,numCC,windowLength,timeStep,max_mel):
 
         echo 'output$'"""}
     p = PraatLoader(additional_scripts=scripts)
-    output = p.run_script('mfcc.praat',filename,numCC,windowLength,timeStep,max_mel)
+    output = p.run_script('mfcc.praat',filename,numCC,win_len,time_step,max_mel)
     return to_array(output)
     
 
