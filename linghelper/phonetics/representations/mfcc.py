@@ -28,10 +28,6 @@ def filter_bank(nfft,nfilt,minFreq,maxFreq,sr):
         loslope = (fftfreqs - fs[0])/(fs[1] - fs[0])
         highslope = (fs[2] - fftfreqs)/(fs[2] - fs[1])
         fbank[i,:] = maximum(zeros(loslope.shape),minimum(loslope,highslope))
-        #for i in range(int(bins[j]),int(bins[j+1])):
-        #    fbank[j,i] = (i - bins[j])/(bins[j+1]-bins[j])
-        #for i in range(int(bins[j+1]),int(bins[j+2])):
-        #    fbank[j,i] = (bins[j+2]-i)/(bins[j+2]-bins[j+1])
     fbank = fbank / max(sum(fbank,axis=1))
     return fbank.transpose()
 
@@ -52,6 +48,7 @@ def dct_spectrum(spec,ncep):
     return cep
 
 def to_mfcc(filename, freq_lims,numCC,win_len,time_step):
+    #HTK style, interpreted from RastaMat
     numFilters = 20
     sr, proc = preproc(filename,alpha=0.97)
     
@@ -75,21 +72,11 @@ def to_mfcc(filename, freq_lims,numCC,win_len,time_step):
     mfccs = zeros((num_frames,numCC))
     
     for k,ind in enumerate(indices):
-        #print(proc[ind:ind+nperseg])
         seg = proc[ind:ind+nperseg] * window
-        #print(window)
-        #print(seg)
         complexSpectrum = fft(seg)
-        #print(complexSpectrum)
         powerSpectrum = abs(complexSpectrum[:int(nperseg/2)]) ** 2
-        #print(powerSpectrum)
-        #print(powerSpectrum.shape)
-        #print(filterbank.shape)
-        #filteredSpectrum = dot(powerSpectrum, filterbank)
         filteredSpectrum = dot(sqrt(powerSpectrum), filterbank)**2
-        #print(filteredSpectrum)
         dctSpectrum = dct_spectrum(filteredSpectrum,numFilters)
-        #print(dctSpectrum)
         dctSpectrum = dot(dctSpectrum , lift)
         mfccs[k,:] = dctSpectrum[1:numCC+1]
     return mfccs
