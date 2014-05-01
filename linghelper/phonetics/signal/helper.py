@@ -8,18 +8,18 @@ def nextpow2(x):
     return ceil(log2(abs(x)))
 
 
-def preproc(path,sr=16000):
+def preproc(path,sr=16000,alpha=0.95):
     oldsr,sig = wavfile.read(path)
+    
     if sr != oldsr:
         t = len(sig)/oldsr
         numsamp = t * sr
         proc = resample(sig,numsamp)
     else:
         proc = sig
-    #proc = lfilter(1, [1, -0.95],proc)
-    denom = sqrt(mean([x**2 for x in proc]))
-    proc = [ x/denom *0.03 for x in proc]
-    return sr,array(proc)
+    proc = proc / 32768
+    proc = lfilter([1., -alpha],1,proc)
+    return sr,proc
 
 def erb_rate_to_hz(x):
     y=(10**(x/21.4)-1)/4.37e-3
