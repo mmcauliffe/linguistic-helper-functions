@@ -48,7 +48,7 @@ words = [('a','cot'),
             ('u','dune'),
             ('u','hoop'),
             ('u','toot'),
-            ('u','zoo'),]
+            ('u','zoo')]
 
 def extract_sound_file_info(filename,pattern):
     m = re.match(pattern,filename)

@@ -47,16 +47,39 @@ def dct_spectrum(spec,ncep):
     cep =  dot(dctm , (10*log10(spec + spacing(1))))
     return cep
 
-def to_mfcc(filename, freq_lims,numCC,win_len,time_step):
+def to_melbank(filename, freq_lims,win_len,time_step,num_filters = 26):
+    sr, proc = preproc(filename,alpha=0.97)
+    
+    minHz = freq_lims[0]
+    maxHz = freq_lims[1]
+    
+    nperseg = int(win_len*sr)
+    noverlap = int(time_step*sr)
+    window = hanning(nperseg+2)[1:nperseg+1]
+    
+    filterbank = filter_bank(nperseg,num_filters,minHz,maxHz,sr)
+    step = nperseg - noverlap
+    indices = arange(0, proc.shape[-1]-nperseg+1, step)
+    num_frames = len(indices)
+    
+    melbank = zeros((num_frames,num_filters))
+    for k,ind in enumerate(indices):
+        seg = proc[ind:ind+nperseg] * window
+        complexSpectrum = fft(seg)
+        powerSpectrum = abs(complexSpectrum[:int(nperseg/2)]) ** 2
+        melbank[k,:] = dot(sqrt(powerSpectrum), filterbank)**2
+    return melbank
+    
+
+def to_mfcc(filename, freq_lims,numCC,win_len,time_step,num_filters = 26, use_power = False):
     #HTK style, interpreted from RastaMat
-    numFilters = 20
     sr, proc = preproc(filename,alpha=0.97)
     
     minHz = freq_lims[0]
     maxHz = freq_lims[1]
     
     L = 22
-    n = arange(numFilters)
+    n = arange(num_filters)
     lift = 1+ (L/2)*sin(pi*n/L)
     lift = diag(lift)
     
@@ -64,21 +87,22 @@ def to_mfcc(filename, freq_lims,numCC,win_len,time_step):
     noverlap = int(time_step*sr)
     window = hanning(nperseg+2)[1:nperseg+1]
     
-    filterbank = filter_bank(nperseg,numFilters,minHz,maxHz,sr)
+    filterbank = filter_bank(nperseg,num_filters,minHz,maxHz,sr)
     step = nperseg - noverlap
     indices = arange(0, proc.shape[-1]-nperseg+1, step)
     num_frames = len(indices)
     
     mfccs = zeros((num_frames,numCC))
-    
     for k,ind in enumerate(indices):
         seg = proc[ind:ind+nperseg] * window
         complexSpectrum = fft(seg)
         powerSpectrum = abs(complexSpectrum[:int(nperseg/2)]) ** 2
         filteredSpectrum = dot(sqrt(powerSpectrum), filterbank)**2
-        dctSpectrum = dct_spectrum(filteredSpectrum,numFilters)
+        dctSpectrum = dct_spectrum(filteredSpectrum,num_filters)
         dctSpectrum = dot(dctSpectrum , lift)
-        mfccs[k,:] = dctSpectrum[1:numCC+1]
+        if not use_power:
+            dctSpectrum = dctSpectrum[1:]
+        mfccs[k,:] = dctSpectrum[:numCC]
     return mfccs
 
 

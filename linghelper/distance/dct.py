@@ -14,6 +14,6 @@ def dct_distance(source,target,norm=True,numC=3):
         if norm:
             target_dct = target_dct[1:]
         target_dct = target_dct[0:numC]
-        distVal += euclidean(pitch_one_dct,pitch_two_dct)
+        distVal += euclidean(source_dct,target_dct)
     return distVal/numBands
         
