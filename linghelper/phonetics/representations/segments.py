@@ -1,4 +1,4 @@
-from numpy import zeros,mean,std, sum, array
+from numpy import zeros,mean,std, sum, array,inf,isinf
 import copy
 
 def summed_sq_error(features,segment_ends):
@@ -8,49 +8,52 @@ def summed_sq_error(features,segment_ends):
     sse = 0
     for l in range(1,num_segs):
         seg_end = segment_ends[l]
+        #if num_segs == 28:
+        #    print(l)
+        #    print(seg_begin)
+        #    print(seg_end)
         ml = zeros((1,num_features))
+        count = 0
         for t in range(seg_begin,seg_end):
             ml += features[t,:]
-        ml = ml / (seg_end-seg_begin)
+            count += 1
+        ml /= count
         for t in range(seg_begin,seg_end):
             sse += sum((features[t,:] - ml) ** 2)
         seg_begin = seg_end
     #print(sse)
     return sse
 
-def to_segments(features):
+def to_segments(features,debug=True):
     #print(features.shape)
-    thresh = 0.15
+    thresh = 0.5
     num_frames, num_coeffs = features.shape
     L = {}
     segment_iter = {}
-    seg_temp = list(range(1,num_frames))
+    seg_temp = list(range(1,num_frames+1))
+    old_sse = summed_sq_error(features,seg_temp)
+    current_sse = old_sse
     for num_segments in range(num_frames-1,1,-1):
-        #print(num_segments)
         best = []
-        min_sse = 10000
-        for l in range(num_segments-1):
-            #print(min_sse)
-            segment_set = copy.copy(seg_temp)
-            
-            if len(segment_set) == 0:
-                continue
+        min_delta_sse = inf
+        for l in range(num_segments):
+            segment_set = copy.deepcopy(seg_temp)
             del segment_set[l]
-            #print(segment_set)
             sse = summed_sq_error(features,segment_set)
-            if sse < min_sse:
+            delta_sse = sse - old_sse
+            if delta_sse < min_delta_sse:
                 best = segment_set
-                min_sse = sse
-        if min_sse == 10000 and num_segments <= 2:
+                curent_sse = sse
+                min_delta_sse = delta_sse
+        if isinf(min_delta_sse):
             continue
         segment_iter[num_segments] = best
         seg_temp = best
-        L[num_segments] = min_sse
+        L[num_segments] = min_delta_sse
+        old_sse = current_sse
+    print(L)
     Larray = array(list(L.values()))
     threshold = mean(Larray) + (thresh *std(Larray))
-    #print(threshold)
-    #print(segment_iter)
-    #print(L)
     ks = list(segment_iter.keys())
     for i in range(max(ks),min(ks)-1,-1):
         #print(L[i])
@@ -60,6 +63,8 @@ def to_segments(features):
             break
     else:
         optimal = segment_iter[-1]
+    if debug:
+        return optimal
     #print(optimal)
     seg_begin = 0
     segments = zeros((len(optimal),num_coeffs))
