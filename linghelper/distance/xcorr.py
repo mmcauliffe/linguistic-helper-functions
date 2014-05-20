@@ -1,6 +1,5 @@
-from math import log
-import numpy as np
-from scipy.signal import correlate,correlate2d,fftconvolve
+from numpy import log, sqrt, sum, correlate,argmax
+#from scipy.signal import correlate,correlate2d,fftconvolve
 
 def xcorr_distance(e1,e2):
     length_diff = e1.shape[0] - e2.shape[0]
@@ -11,14 +10,18 @@ def xcorr_distance(e1,e2):
         longerEnv = e2
         shorterEnv = e1
     num_bands = longerEnv.shape[1]
-    matchSum = np.correlate(longerEnv[:,0],shorterEnv[:,0],mode='valid')
-    corrs = [matchSum]
+    matchSum = correlate(longerEnv[:,0]/sqrt(sum(longerEnv[:,0]**2)),shorterEnv[:,0]/sqrt(sum(shorterEnv[:,0]**2)),mode='valid')
     for i in range(1,num_bands):
-        temp = np.correlate(longerEnv[:,i],shorterEnv[:,i],mode='valid')
-        corrs.append(temp)
-        matchSum = [matchSum[j] + temp[j] for j in range(len(matchSum))]
-    maxInd = np.argmax(matchSum)
-    matchVal = matchSum[maxInd]/num_bands
+        longerBand = longerEnv[:,i]
+        denom = sqrt(sum(longerBand**2))
+        longerBand = longerBand/denom
+        shorterBand = shorterEnv[:,i]
+        denom = sqrt(sum(shorterBand**2))
+        shorterBand = shorterBand/denom
+        temp = correlate(longerBand,shorterBand,mode='valid')
+        matchSum += temp
+    maxInd = argmax(matchSum)
+    matchVal = abs(matchSum[maxInd]/num_bands)
     #if returnBandScores:
     #    return matchVal, [x[maxInd] for x in corrs]
     return -1*log(matchVal)

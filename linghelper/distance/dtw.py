@@ -7,6 +7,9 @@ def dtw_distance(source,target):
     return regularDTW(distMat)
 
 def generate_distance_matrix(source,target):
+    #print(source.shape)
+    #print(target.shape)
+    assert(source.shape[1] == target.shape[1])
     sLen = source.shape[0]
     tLen = target.shape[0]
     distMat = zeros((sLen,tLen))
@@ -27,7 +30,7 @@ def regularDTW(distMat,distOnly=True):
     
     for i in range(sLen):
         for j in range(tLen):
-            minPrevDistance, direction = min(enumerate([totalDistance[i,j],totalDistance[i,j+1],totalDistance[i+1,j]]), key=operator.itemgetter(1))
+            direction,minPrevDistance = min(enumerate([totalDistance[i,j],totalDistance[i,j+1],totalDistance[i+1,j]]), key=operator.itemgetter(1))
             totalDistance[i+1,j+1] = totalDistance[i+1,j+1] + minPrevDistance
             minDirection[i,j] = direction
     

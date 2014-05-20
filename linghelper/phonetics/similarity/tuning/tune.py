@@ -106,8 +106,8 @@ nz_dataset = DataSet(r'C:\Users\michael\Documents\Data\NZDiph',
 
 best = 0
 bestConfig = None
-representations = ['envelopes','mfcc','melbank']
-match_algorithm = ['xcorr']
+representations = ['envelopes','mfcc','melbank','prosody']
+match_algorithm = ['xcorr','dct','dtw']
 
 
 
@@ -119,6 +119,7 @@ for i in range(2000):
     config.verify()
     print(config)
     corr = nz_dataset.analyze_config(config)
+    print(corr)
     if abs(corr) > best:
         best = abs(corr)
         print('New best: ',best)

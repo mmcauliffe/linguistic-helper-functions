@@ -3,13 +3,16 @@ import random
 from csv import DictReader
 from collections import Counter
 from functools import partial
-from math import log
+
+from numpy import isnan,log
 
 from scipy.stats.stats import pearsonr
 
-from linghelper.phonetics.representations.amplitude_envelopes import to_envelopes
+from linghelper.phonetics.representations.amplitude_envelopes import to_envelopes, to_gammatone_envelopes
 from linghelper.phonetics.representations.mfcc import to_mfcc, to_melbank, to_mfcc_praat
-from linghelper.phonetics.representations.prosody import to_pitch, to_intensity
+from linghelper.phonetics.representations.mhec import to_mhec
+from linghelper.phonetics.representations.segments import to_segments
+from linghelper.phonetics.representations.prosody import to_prosody
 from linghelper.distance.dtw import dtw_distance
 from linghelper.distance.xcorr import xcorr_distance
 from linghelper.distance.dct import dct_distance
@@ -87,26 +90,48 @@ class DataSet(object):
         use_praat = config.use_praat.get_value()
         num_coeffs = config.num_coeffs.get_value()
         num_bands = config.num_bands.get_value()
+        use_window = config.use_window.get_value()
+        use_power = config.use_power.get_value()
+        use_segments = config.use_segments.get_value()
+        
         if config.representation == 'envelopes':
-            to_rep = partial(to_envelopes,num_bands=num_bands,freq_lims=freq_lims,gammatone=False)
+            if use_window:
+                to_rep = partial(to_envelopes,
+                                            num_bands=num_bands,
+                                            freq_lims=freq_lims,
+                                            window_length=window_length,
+                                            time_step=time_step)
+            else:
+                to_rep = partial(to_envelopes,num_bands=num_bands,freq_lims=freq_lims)
         elif config.representation == 'mfcc':
-            use_power = config.use_power.get_value()
             if use_praat:
                 to_rep = partial(to_mfcc_praat, freq_lims=freq_lims, 
-                                                numCC=num_coeffs,
+                                                num_coeffs=num_coeffs,
                                                 win_len=window_length,
                                                 time_step=time_step)
             else:
                 to_rep = partial(to_mfcc,freq_lims=freq_lims,
-                                            numCC=num_coeffs,
+                                            num_coeffs=num_coeffs,
+                                            num_filters = num_bands, 
                                             win_len=window_length,
                                             time_step=time_step,
-                                            num_filters = num_bands, 
                                             use_power = use_power)
         elif config.representation == 'mhec':
-            pass
+            to_rep = partial(to_mhec, freq_lims=freq_lims,
+                                        num_coeffs=num_coeffs,
+                                        num_filters = num_bands, 
+                                        window_length=window_length,
+                                        time_step=time_step, 
+                                        use_power = use_power)
         elif config.representation == 'gammatone':
-            pass
+            if use_window:
+                to_rep = partial(to_gammatone_envelopes,num_bands = num_bands,
+                                                    freq_lims=freq_lims,
+                                                    window_length=window_length,
+                                                    time_step=time_step)
+            else:
+                to_rep = partial(to_gammatone_envelopes,num_bands = num_bands,
+                                                    freq_lims=freq_lims)
         elif config.representation == 'melbank':
             to_rep = partial(to_melbank,freq_lims=freq_lims,
                                         win_len=window_length,
@@ -130,15 +155,44 @@ class DataSet(object):
                 continue
             if pm[0] not in cache:
                 cache[pm[0]] = to_rep(pm[0])
+                
+                if cache[pm[0]] is None:
+                    continue
+                if use_segments:
+                    cache[pm[0]] = to_segments(cache[pm[0]])
             if pm[1] not in cache:
                 cache[pm[1]] = to_rep(pm[1])
+                
+                if cache[pm[1]] is None:
+                    continue
+                if use_segments:
+                    cache[pm[1]] = to_segments(cache[pm[1]])
             if pm[2] not in cache:
                 cache[pm[2]] = to_rep(pm[2])
+                
+                if cache[pm[2]] is None:
+                    continue
+                if use_segments:
+                    cache[pm[2]] = to_segments(cache[pm[2]])
+                    
             base = cache[pm[0]]
             model = cache[pm[1]]
             shadow = cache[pm[2]]
+            
             dist1 = dist_func(base,model)
+            if dist1 == 0 or isnan(dist1):
+                print(base)
+                print(model)
+                print(dist1)
+                print(dist2)
+                raise(ValueError)
             dist2 = dist_func(shadow,model)
+            if isnan(dist2):
+                print(base)
+                print(model)
+                print(dist1)
+                print(dist2)
+                raise(ValueError)
             ratio = dist2 / dist1
             x.append(self.listenerResp[listenertup])
             y.append(ratio)
@@ -164,7 +218,7 @@ class Param(object):
         return self.value
 
 class Configuration(object):
-    max_freq = Param(4000,10000,100)
+    max_freq = Param(4000,8000,100)
     min_freq = Param(50,500,50)
     window_length = Param(0.005,0.05,0.005)
     time_step = Param(0.001,0.01,0.001)
@@ -172,6 +226,8 @@ class Configuration(object):
     num_coeffs = Param(10,30,2)
     use_power = Param(False,True,1)
     num_bands = Param(4,48,2)
+    use_window = Param(True,False,1)
+    use_segments = Param(True,False,1)
     
     def __init__(self,representation,match_algorithm):
         self.representation = representation
@@ -184,12 +240,31 @@ class Configuration(object):
         self.num_coeffs.reset_value()
         self.use_power.reset_value()
         self.num_bands.reset_value()
+        self.use_window.reset_value()
+        self.use_segments.reset_value()
+        #self.use_segments.value = True
+        self.use_window.value = True
+        #self.representation = 'mfcc'
+        #self.match_algorithm = 'dct'
+        #self.min_freq.value = 450
+        #self.max_freq.value = 5000
+        #self.window_length.value = 0.05
+        #self.time_step.value = 0.01
+        #self.num_coeffs.value = 14
+        #self.num_bands.value = 40
+        #self.use_power.value = True
         
     def verify(self):
         if self.representation in ['mfcc','mhec']:
-            while self.num_coeffs.get_value() > self.num_bands.get_value():
+            while self.num_coeffs.get_value() >= self.num_bands.get_value():
                 self.num_coeffs.reset_value()
                 self.num_bands.reset_value()
+        elif self.representation == 'envelopes':
+            while self.num_bands.get_value() > 20:
+                self.num_bands.reset_value()
+        while self.window_length.get_value() <= self.time_step.get_value():
+            self.window_length.reset_value()
+            self.time_step.reset_value()
                 
     def __str__(self):
         
@@ -204,10 +279,12 @@ class Configuration(object):
         Num bands: %d
         Use power: %r
         Use Praat: %r
+        Use window: %r
+        Use segments: %r
         ''' % (self.representation,self.match_algorithm,self.min_freq.get_value(),
                 self.max_freq.get_value(),self.window_length.get_value(),self.time_step.get_value(),
                 self.num_coeffs.get_value(), self.num_bands.get_value(), self.use_power.get_value(),
-                self.use_praat.get_value())
+                self.use_praat.get_value(),self.use_window.get_value(),self.use_segments.get_value())
 
 
 class MfccConfig(Configuration):

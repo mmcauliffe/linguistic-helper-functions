@@ -38,11 +38,11 @@ def melToFreq(mel):
     return 700*(10**(mel/2595.0)-1)
 
 
-def dct_spectrum(spec,ncep):
-    nrow =spec.shape[0]
-    dctm = zeros((ncep,nrow))
+def dct_spectrum(spec):
+    ncep=spec.shape[0]
+    dctm = zeros((ncep,ncep))
     for i in range(ncep):
-        dctm[i,:] = cos(i * arange(1,2*nrow,2)/(2*nrow) * pi) * sqrt(2/nrow)
+        dctm[i,:] = cos(i * arange(1,2*ncep,2)/(2*ncep) * pi) * sqrt(2/ncep)
     dctm = dctm * 0.230258509299405
     cep =  dot(dctm , (10*log10(spec + spacing(1))))
     return cep
@@ -71,7 +71,7 @@ def to_melbank(filename, freq_lims,win_len,time_step,num_filters = 26):
     return melbank
     
 
-def to_mfcc(filename, freq_lims,numCC,win_len,time_step,num_filters = 26, use_power = False):
+def to_mfcc(filename, freq_lims,num_coeffs,win_len,time_step,num_filters = 26, use_power = False):
     #HTK style, interpreted from RastaMat
     sr, proc = preproc(filename,alpha=0.97)
     
@@ -92,17 +92,17 @@ def to_mfcc(filename, freq_lims,numCC,win_len,time_step,num_filters = 26, use_po
     indices = arange(0, proc.shape[-1]-nperseg+1, step)
     num_frames = len(indices)
     
-    mfccs = zeros((num_frames,numCC))
+    mfccs = zeros((num_frames,num_coeffs))
     for k,ind in enumerate(indices):
         seg = proc[ind:ind+nperseg] * window
         complexSpectrum = fft(seg)
         powerSpectrum = abs(complexSpectrum[:int(nperseg/2)]) ** 2
         filteredSpectrum = dot(sqrt(powerSpectrum), filterbank)**2
-        dctSpectrum = dct_spectrum(filteredSpectrum,num_filters)
+        dctSpectrum = dct_spectrum(filteredSpectrum)
         dctSpectrum = dot(dctSpectrum , lift)
         if not use_power:
             dctSpectrum = dctSpectrum[1:]
-        mfccs[k,:] = dctSpectrum[:numCC]
+        mfccs[k,:] = dctSpectrum[:num_coeffs]
     return mfccs
 
 
