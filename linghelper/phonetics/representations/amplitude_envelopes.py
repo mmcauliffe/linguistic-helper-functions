@@ -1,10 +1,11 @@
-from numpy import pi,exp,log,abs,sum,sqrt,array, hanning, arange, zeros,cos
+from numpy import pi,exp,log,abs,sum,sqrt,array, hanning, arange, zeros,cos,ceil,mean
 
 from scipy.signal import filtfilt,butter,hilbert,resample
 from linghelper.phonetics.signal import preproc,make_erb_cfs,nextpow2,fftfilt
 
 def to_envelopes(path,num_bands,freq_lims,window_length=None,time_step=None):
-    sr, proc = preproc(path)
+    sr, proc = preproc(path,alpha=0.97)
+    proc = proc/sqrt(mean(proc**2))*0.03;
     bandLo = [ freq_lims[0]*exp(log(freq_lims[1]/freq_lims[0])/num_bands)**x for x in range(num_bands)]
     bandHi = [ freq_lims[0]*exp(log(freq_lims[1]/freq_lims[0])/num_bands)**(x+1) for x in range(num_bands)]
     if window_length is not None and time_step is not None:
@@ -20,7 +21,7 @@ def to_envelopes(path,num_bands,freq_lims,window_length=None,time_step=None):
         use_windows=False
         sr_env = 120
         t = len(proc)/sr
-        numsamp = t * sr_env * 2
+        numsamp = ceil(t * sr_env)
         envelopes = []
     for i in range(num_bands):
         b, a = butter(2,(bandLo[i]/(sr/2),bandHi[i]/(sr/2)), btype = 'bandpass')
