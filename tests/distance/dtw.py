@@ -3,6 +3,8 @@ from numpy import array
 import unittest
 from linghelper.distance.dtw import dtw_distance,generate_distance_matrix
 
+import numpy as np
+
 class DTWTest(unittest.TestCase):
     def setUp(self):
         self.source = array([[2,3,4],

@@ -94,10 +94,10 @@ nz_words = ['air','ear',
 
 nz_productions = ['1','2','3']
 
-#ati_dataset = DataSet(r'C:\Users\michael\Documents\Data\ATI',
-#                        ati_lookups,
-#                        ati_words,
-#                        additional_model_info = ati_voicetype)
+ati_dataset = DataSet(r'C:\Users\michael\Documents\Data\ATI',
+                        ati_lookups,
+                        ati_words,
+                        additional_model_info = ati_voicetype)
                         
 nz_dataset = DataSet(r'C:\Users\michael\Documents\Data\NZDiph',
                         nz_lookups,
@@ -109,7 +109,15 @@ bestConfig = None
 representations = ['envelopes','mfcc','melbank','prosody']
 match_algorithm = ['xcorr','dct','dtw']
 
+use_ati = True
+use_nz = True
 
+if use_ati and use_nz:
+    LOG_PATH = r'C:\Users\michael\Documents\Tuning\atiNz_log.txt'
+elif use_ati:
+    LOG_PATH = r'C:\Users\michael\Documents\Tuning\ati_log.txt'
+else:
+    LOG_PATH = r'C:\Users\michael\Documents\Tuning\nz_log.txt'
 
 for i in range(2000):
     print('Iteration: ', i)
@@ -118,9 +126,21 @@ for i in range(2000):
     config = Configuration(rep,alg)
     config.verify()
     print(config)
-    corr = nz_dataset.analyze_config(config)
+    
+    if use_ati and use_nz:
+        corr = ati_dataset.analyze_config(config)
+        corr += nz_dataset.analyze_config(config)
+        corr /= 2
+    elif use_ati:
+        corr = ati_dataset.analyze_config(config)
+    else:
+        corr = nz_dataset.analyze_config(config)
     print(corr)
     if abs(corr) > best:
         best = abs(corr)
         print('New best: ',best)
         bestConfig = config
+        with open(LOG_PATH,'a') as f:
+            f.write('Score: %f\n' % best)
+            f.write(str(bestConfig))
+            f.write('\n')

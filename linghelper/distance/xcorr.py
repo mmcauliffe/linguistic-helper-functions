@@ -22,9 +22,7 @@ def xcorr_distance(e1,e2):
         matchSum += temp
     maxInd = argmax(matchSum)
     matchVal = abs(matchSum[maxInd]/num_bands)
-    #if returnBandScores:
-    #    return matchVal, [x[maxInd] for x in corrs]
-    return -1*log(matchVal)
+    return 1/matchVal
 
 #def fft_correlate_envelopes(e1,e2):
     #length_diff = e1.shape[0] - e2.shape[0]

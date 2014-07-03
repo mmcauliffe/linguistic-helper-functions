@@ -17,6 +17,12 @@ from linghelper.distance.dtw import dtw_distance
 from linghelper.distance.xcorr import xcorr_distance
 from linghelper.distance.dct import dct_distance
 
+class Listener(object):
+    pass
+    
+class Speaker(object):
+    def __init__(self,Number):
+        self.Number = Number
 
 class DataSet(object):
     def __init__(self,directory,lookup_functions,words,productions = None,additional_model_info = None):
@@ -156,29 +162,30 @@ class DataSet(object):
             if pm[0] not in cache:
                 cache[pm[0]] = to_rep(pm[0])
                 
-                if cache[pm[0]] is None:
-                    continue
-                if use_segments:
+                if use_segments and cache[pm[0]] is not None:
                     cache[pm[0]] = to_segments(cache[pm[0]])
             if pm[1] not in cache:
                 cache[pm[1]] = to_rep(pm[1])
                 
-                if cache[pm[1]] is None:
-                    continue
-                if use_segments:
+                if use_segments and cache[pm[1]] is not None:
                     cache[pm[1]] = to_segments(cache[pm[1]])
             if pm[2] not in cache:
                 cache[pm[2]] = to_rep(pm[2])
                 
-                if cache[pm[2]] is None:
-                    continue
-                if use_segments:
+                if use_segments and cache[pm[2]] is not None:
                     cache[pm[2]] = to_segments(cache[pm[2]])
-                    
+            
             base = cache[pm[0]]
             model = cache[pm[1]]
             shadow = cache[pm[2]]
             
+            
+            if base is None:
+                continue
+            if model is None:
+                continue
+            if shadow is None:
+                continue
             dist1 = dist_func(base,model)
             if dist1 == 0 or isnan(dist1):
                 print(base)
@@ -193,6 +200,9 @@ class DataSet(object):
                 print(dist1)
                 print(dist2)
                 raise(ValueError)
+            if config.use_similarity:
+                dist1 = 1/dist1
+                dist2 = 1/dist2
             ratio = dist2 / dist1
             x.append(self.listenerResp[listenertup])
             y.append(ratio)
@@ -228,6 +238,7 @@ class Configuration(object):
     num_bands = Param(4,48,2)
     use_window = Param(True,False,1)
     use_segments = Param(True,False,1)
+    use_similarity = Param(True,False,1)
     
     def __init__(self,representation,match_algorithm):
         self.representation = representation
@@ -242,8 +253,9 @@ class Configuration(object):
         self.num_bands.reset_value()
         self.use_window.reset_value()
         self.use_segments.reset_value()
-        #self.use_segments.value = True
+        self.use_segments.value = False
         self.use_window.value = True
+        self.use_similarity.reset_value()
         #self.representation = 'mfcc'
         #self.match_algorithm = 'dct'
         #self.min_freq.value = 450

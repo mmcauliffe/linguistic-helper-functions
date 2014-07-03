@@ -3,16 +3,15 @@ import re
 import random
 import numpy as np
 from csv import DictReader,DictWriter
-sys.path.append('/home/michael/dev/Linguistics/linguistic-helper-functions')
 
 from linghelper.representations import Word
 
-IPHOD_PATH = '/home/michael/dev/Corpora/IPHOD/IPhOD2_Words.txt'
+IPHOD_PATH = r'C:\Users\michael\Documents\Data\Iphod\IPhOD2_Words.txt'
 
 DIALECT_MERGER = [('AA','AO')]
 
 SETTINGS = {
-            'NSylls':[1],
+            'NSylls':[2,3,4],
             'CVSkel': [''],
             'Critical segments': ['S','SH'],
             'Avoided segments': ['Z','ZH','CH','JH'],
@@ -25,8 +24,8 @@ SETTINGS = {
             'No plurals': True,
             'No gerunds': True,
             'No past tense': True,
-            'Home dir': '/home/michael/Documents/Linguistics/Projects/Perceptual Learning/Pilot/Lists',
-            'Excluded word list': '/home/michael/Documents/Linguistics/Projects/Perceptual Learning/Pilot/wordlist.txt',
+            'Home dir': r'C:\Users\michael\Documents\Data\Perceptual learning\Lists',
+            'Excluded word list': r'C:\Users\michael\Documents\Data\Perceptual learning\wordlist.txt',
             }
 
 TRANS = set([])
@@ -56,9 +55,8 @@ def read_iphod():
     with open(IPHOD_PATH,'r') as f:
         out = DictReader(f,delimiter='\t')
         for l in out:
-            for k in l.keys():
-                if k not in ['Word','UnTrn','StTrn','NSyll','NPhon','unsDENS','SFreq']:
-                    del l[k]
+            rl = {k:v for k,v in l.items() if k in ['Word','UnTrn','StTrn','NSyll','NPhon','unsDENS','SFreq']}
+            
             if 'CVC' in SETTINGS['CVSkel']:
                 trans = l['UnTrn'].split('.')
                 if len(trans) != 3:
@@ -155,10 +153,10 @@ if __name__ == '__main__':
 
     wordlist = get_current_wordlist()
     filler_list = get_filler_words(iphod,wordlist)
-    continuum = get_continuum_words(iphod)
-    print(continuum)
-    #random.shuffle(filler_list)
-    #output_list(filler_list,'/home/michael/Documents/Linguistics/Projects/Perceptual Learning/Pilot/Lists/fillers.txt')
+    #continuum = get_continuum_words(iphod)
+    #print(continuum)
+    random.shuffle(filler_list)
+    output_list(filler_list,os.path.join(SETTINGS['Home dir'],'fillers.txt'))
     #for sound in SETTINGS['Critical segments']:
         #for sylpos in SETTINGS['Critical position in syllable']:
             #for wordpos in SETTINGS['Critical syllable position in word']:
