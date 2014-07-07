@@ -1,7 +1,7 @@
 import re
 import copy
 
-from constants import ENGLISH_ONSETS  as ONSETS,ENGLISH_VOWEL_PATTERN as VOWEL_PATTERN
+from linghelper.representations.constants import ENGLISH_ONSETS  as ONSETS,ENGLISH_VOWEL_PATTERN as VOWEL_PATTERN
 
 class Word(object):
     def __init__(self,orthography,transcription,frequency=0):

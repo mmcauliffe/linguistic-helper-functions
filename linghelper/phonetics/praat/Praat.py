@@ -9,20 +9,19 @@ import os
 import math
 import re
 
-from .scripts import praatscripts
+from linghelper.phonetics.praat.scripts import praatscripts
 
 
 class PraatLoader:
-    def __init__(self,praatpath=None,debug=False,additional_scripts = {}):
+    def __init__(self,praatpath=None,debug=True,additional_scripts = {}):
+        from linghelper.settings import PRAAT_PATH
+        if PRAAT_PATH == '' or not os.path.isfile(PRAAT_PATH):
+            raise(ImportError('Please specify a PRAAT_PATH variable as the absolute file path to a Praat executable in a linghelper_settings.py file located on your path'))
         self.debug=debug
         self.scripts = praatscripts
         self.scripts.update(additional_scripts)
-        if praatpath:
-            self.script_dir = os.path.join(os.path.dirname(praatpath),'praatScripts')
-            self.praat = praatpath
-        else:
-            self.script_dir = os.path.join(os.path.dirname(__file__),'praatScripts')
-            self.praat = 'praat'
+        self.script_dir = os.path.join(os.path.dirname(PRAAT_PATH),'praatScripts')
+        self.praat = PRAAT_PATH
         self.init_scripts()
         if self.debug:
             self.initlog()
@@ -67,7 +66,11 @@ class PraatLoader:
     def run_script(self,name,*args):
         if self.debug:
             self.updatelog('%s' % name)
-        com = [self.praat, os.path.join(self.script_dir,name)] + list(map(str,args))
+        
+        com = [self.praat]
+        if self.praat.endswith('con.exe'):
+            com += ['-a']
+        com +=[os.path.join(self.script_dir,name)] + list(map(str,args))
         if self.debug:
             self.updatelog('%s' % str(com))
         p = subprocess.Popen(com,stdout=subprocess.PIPE,stderr=subprocess.PIPE,stdin=subprocess.PIPE)

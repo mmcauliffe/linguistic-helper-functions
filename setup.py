@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='linguistic-helper-functions',
-    version='0.1.24',
+    version='0.2',
     author='Michael McAuliffe',
     author_email='michael.e.mcauliffe@gmail.com',
     packages=['linghelper',
@@ -16,5 +16,5 @@ setup(
     license='LICENSE.txt',
     description='',
     long_description=open('README.md').read(),
-    install_requires=['numpy'],
+    install_requires=['numpy','scipy'],
 )
